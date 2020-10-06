@@ -2,6 +2,9 @@
 
 # fork blackarch strap.sh
 
+baseurl=https://raw.githubusercontent.com/ctlos/ctlos_repo/dev/x86_64
+keyring_pkg=ctlos-keyring-stable-1-x86_64
+mirror_pkg=ctlos-mirrorlist-stable-1-x86_64
 MIRROR_F="ctlos-mirrorlist"
 
 err()
@@ -49,15 +52,18 @@ check_internet()
 # retrieve the Ctlos Linux keyring
 fetch_keyring()
 {
-  wget https://github.com/ctlos/ctlos_repo/raw/dev/x86_64/ctlos-keyring-20200714-4-any.pkg.tar.zst{,.sig}
+  curl -s -O $baseurl/$keyring_pkg.pkg.tar.zst{,.sig}
 }
 
 # verify the keyring signature
 verify_keyring()
 {
   if [ -f "/usr/share/pacman/keyrings/ctlos.gpg" ]; then
-    wget -P /usr/share/pacman/keyrings git.io/ctlos.gpg
+    msg 'gpg key installed /usr/share/pacman/keyrings/ctlos.gpg'
+  else
+    curl -s -Lo /usr/share/pacman/keyrings/ctlos.gpg git.io/ctlos.gpg
     pacman-key --add /usr/share/pacman/keyrings/ctlos.gpg
+    # pacman-key --keyserver keys.gnupg.net --recv-keys 98F76D97B786E6A3
     # pacman-key --recv-keys 98F76D97B786E6A3
     pacman-key --lsign-key 98F76D97B786E6A3
   fi
@@ -66,8 +72,8 @@ verify_keyring()
 # delete the signature files
 delete_signature()
 {
-  if [ -f "ctlos-keyring-20200714-4-any.pkg.tar.zst.sig" ]; then
-    rm ctlos-keyring-20200714-4-any.pkg.tar.zst.sig
+  if [ -f "$keyring_pkg.pkg.tar.zst.sig" ]; then
+    rm $keyring_pkg.pkg.tar.zst.sig
   fi
 }
 
@@ -80,8 +86,8 @@ check_pacman_gnupg()
 # install the keyring
 install_keyring()
 {
-  if ! pacman --config /dev/null --noconfirm \
-    -U ctlos-keyring-20200714-4-any.pkg.tar.zst ; then
+  if ! pacman --config /dev/null --noconfirm --overwrite='*' \
+    -U $keyring_pkg.pkg.tar.zst ; then
     err 'keyring installation failed'
   fi
 
@@ -91,14 +97,14 @@ install_keyring()
 
 install_mirrors()
 {
-  wget https://github.com/ctlos/ctlos_repo/raw/dev/x86_64/ctlos-mirrorlist-20200714-2-any.pkg.tar.zst{,.sig}
+  curl -s -O $baseurl/$mirror_pkg.pkg.tar.zst{,.sig}
 
-  if [ -f "ctlos-mirrorlist-20200714-2-any.pkg.tar.zst.sig" ]; then
-    rm ctlos-mirrorlist-20200714-2-any.pkg.tar.zst.sig
+  if [ -f "$mirror_pkg.pkg.tar.zst.sig" ]; then
+    rm $mirror_pkg.pkg.tar.zst.sig
   fi
 
-  if ! pacman --config /dev/null --noconfirm \
-    -U ctlos-mirrorlist-20200714-2-any.pkg.tar.zst ; then
+  if ! pacman --config /dev/null --noconfirm --overwrite='*' \
+    -U $mirror_pkg.pkg.tar.zst ; then
     err 'mirrors installation failed'
   fi
 }
@@ -164,7 +170,7 @@ ctlos_setup()
   msg 'updating package databases'
   pacman_update
   # pacman_upgrade
-  msg 'Ctlos Linux is ready!'
+  msg 'Ctlos Linux repo is ready!'
 }
 
 ctlos_setup
