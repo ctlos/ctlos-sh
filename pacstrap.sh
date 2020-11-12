@@ -28,7 +28,7 @@ cryptsetup e2fsprogs f2fs-tools btrfs-progs lvm2 reiserfsprogs xfsprogs
 )
 
 for i in "${PKGS[*]}"; do
-  /usr/bin/pacstrap.sh -c ${chroot_path} $i
+  /usr/bin/pacstrap.sh ${chroot_path} $i
 done
 
 echo "==== Done pacstrap.sh ===="
