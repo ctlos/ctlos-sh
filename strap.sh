@@ -115,6 +115,7 @@ update_pacman_conf()
   sed -i '/ctlos_repo/{N;d}' /etc/pacman.conf
 
   cat >> "/etc/pacman.conf" << EOF
+
 [ctlos_repo]
 Include = /etc/pacman.d/$MIRROR_F
 EOF
@@ -122,6 +123,7 @@ EOF
 add_ctlos_aur() {
   sed -i '/ctlos-aur/,+2d' /etc/pacman.conf
   cat >> "/etc/pacman.conf" << EOF
+
 [ctlos-aur]
 SigLevel = Optional TrustAll
 Server = https://dev.ctlos.ru/ctlos-aur
