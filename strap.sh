@@ -2,10 +2,11 @@
 
 # fork blackarch strap.sh
 
-baseurl=https://raw.githubusercontent.com/ctlos/ctlos_repo/dev/x86_64
+baseurl=https://raw.githubusercontent.com/ctlos/ctlos_repo/master/x86_64
 keyring_pkg=ctlos-keyring-stable-1-x86_64
 mirror_pkg=ctlos-mirrorlist-stable-1-x86_64
 MIRROR_F="ctlos-mirrorlist"
+MIRROR_AUR="ctlos-aur"
 
 err()
 {
@@ -90,8 +91,6 @@ install_keyring()
     -U $keyring_pkg.pkg.tar.zst ; then
     err 'keyring installation failed'
   fi
-
-  # just in case
   pacman-key --populate
 }
 
@@ -118,6 +117,14 @@ update_pacman_conf()
   cat >> "/etc/pacman.conf" << EOF
 [ctlos_repo]
 Include = /etc/pacman.d/$MIRROR_F
+EOF
+}
+add_ctlos_aur() {
+  sed -i '/ctlos-aur/,+2d' /etc/pacman.conf
+  cat >> "/etc/pacman.conf" << EOF
+[ctlos-aur]
+SigLevel = Optional TrustAll
+Server = https://dev.ctlos.ru/ctlos-aur
 EOF
 }
 
@@ -163,9 +170,12 @@ ctlos_setup()
   msg 'mirrorlist installed successfully'
   # check if pacman.conf has already a mirror
   if ! grep -q "\[ctlos_repo\]" /etc/pacman.conf; then
-    msg 'configuring pacman'
     msg 'updating pacman.conf'
     update_pacman_conf
+  fi
+  if ! grep -q "\[ctlos-aur\]" /etc/pacman.conf; then
+    msg 'add ctlos-aur pacman.conf'
+    add_ctlos_aur
   fi
   msg 'updating package databases'
   pacman_update
