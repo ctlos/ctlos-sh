@@ -29,7 +29,7 @@ chmod +x /usr/bin/pacstrap.sh
 fi
 
 PKGS=(
-base grub reflector
+base sudo grub reflector lsb-release nano iwd haveged gnu-netcat rsync zsh
 )
 
 for i in "${PKGS[@]}"; do
