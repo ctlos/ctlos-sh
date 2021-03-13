@@ -35,21 +35,7 @@ gnu-netcat rsync zsh
 
 /usr/bin/pacstrap.sh ${chroot_path} ${PKGS[@]}
 
+curl -s -Lo ${chroot_path}/usr/local/bin/settings.sh https://raw.githubusercontent.com/ctlos/ctlos-sh/master/settings.sh
+chmod +x ${chroot_path}/usr/local/bin/settings.sh
+
 echo "==== Done pacstrap.sh ===="
-
-cat <<LOL >${chroot_path}/settings.sh
-# curl -LO git.io/strap.sh
-curl -sO https://raw.githubusercontent.com/ctlos/ctlos-sh/master/strap.sh
-sh strap.sh
-rm strap.sh
-
-# pacman-key --init
-# pacman-key --populate
-# pacman -Syy --noconfirm
-LOL
-
-chmod +x ${chroot_path}/settings.sh
-arch-chroot ${chroot_path} /bin/bash -c /settings.sh
-rm ${chroot_path}/settings.sh
-
-echo "==== Done settings.sh ===="
