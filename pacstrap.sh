@@ -29,25 +29,23 @@ chmod +x /usr/bin/pacstrap.sh
 fi
 
 PKGS=(
-base sudo grub reflector lsb-release nano iwd haveged gnu-netcat rsync zsh
+base sudo grub reflector lsb-release nano iwd haveged
+gnu-netcat rsync zsh
 )
 
-for i in "${PKGS[@]}"; do
-  /usr/bin/pacstrap.sh ${chroot_path} $i
-done
+/usr/bin/pacstrap.sh ${chroot_path} ${PKGS[@]}
 
 echo "==== Done pacstrap.sh ===="
 
 cat <<LOL >${chroot_path}/settings.sh
-# reflector -a 12 -l 30 -f 30 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
 # curl -LO git.io/strap.sh
 curl -sO https://raw.githubusercontent.com/ctlos/ctlos-sh/master/strap.sh
 sh strap.sh
 rm strap.sh
 
-pacman-key --init
-pacman-key --populate
-pacman -Syy --noconfirm
+# pacman-key --init
+# pacman-key --populate
+# pacman -Syy --noconfirm
 LOL
 
 chmod +x ${chroot_path}/settings.sh
