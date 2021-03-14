@@ -16,15 +16,16 @@ if [[ $(command -v pacstrap) ]]; then
 fi
 
 if [[ ! -f "/usr/bin/pacstrap.sh" ]]; then
-sed -e '/chroot_add_mount proc/d' \
-  -e '/chroot_add_mount sys/d' \
-  -e '/ignore_error chroot_maybe_add_mount/d' \
-  -e '/chroot_add_mount udev/d' \
-  -e '/chroot_add_mount devpts/d' \
-  -e '/chroot_add_mount shm/d' \
-  -e '/chroot_add_mount \/run/d' \
-  -e '/chroot_add_mount tmp/d' \
-  -e '/efivarfs \"/d' /usr/bin/pacstrap >/usr/bin/pacstrap.sh
+# sed -e '/chroot_add_mount proc/d' \
+#   -e '/chroot_add_mount sys/d' \
+#   -e '/ignore_error chroot_maybe_add_mount/d' \
+#   -e '/chroot_add_mount udev/d' \
+#   -e '/chroot_add_mount devpts/d' \
+#   -e '/chroot_add_mount shm/d' \
+#   -e '/chroot_add_mount \/run/d' \
+#   -e '/chroot_add_mount tmp/d' \
+#   -e '/efivarfs \"/d' /usr/bin/pacstrap >/usr/bin/pacstrap.sh
+curl -s -Lo /usr/bin/pacstrap.sh https://raw.githubusercontent.com/ctlos/ctlos-sh/master/pacstrap_bak
 chmod +x /usr/bin/pacstrap.sh
 fi
 
