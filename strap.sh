@@ -126,7 +126,7 @@ add_ctlos_aur() {
 
 [ctlos-aur]
 SigLevel = Optional TrustAll
-Server = https://dev.ctlos.ru/ctlos-aur
+Server = https://cloud.ctlos.ru/ctlos-aur
 EOF
 }
 
