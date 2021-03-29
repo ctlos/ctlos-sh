@@ -29,12 +29,24 @@ curl -s -Lo /usr/bin/pacstrap.sh https://raw.githubusercontent.com/ctlos/ctlos-s
 chmod +x /usr/bin/pacstrap.sh
 fi
 
+_vbox() {
+  result=$(systemd-detect-virt)
+  if [ $result = "oracle" ]; then
+    vbox_pkgs="virtualbox-guest-utils virtualbox-guest-dkms"
+  elif [ $result = "vmware" ]; then
+    vbox_pkgs=""
+  else
+    vbox_pkgs=""
+  fi
+}
+_vbox
+
 PKGS=(
 base sudo grub reflector lsb-release nano iwd haveged
 gnu-netcat rsync zsh
 )
 
-/usr/bin/pacstrap.sh ${chroot_path} ${PKGS[@]}
+/usr/bin/pacstrap.sh ${chroot_path} ${PKGS[@]} $vbox_pkgs
 
 curl -s -Lo ${chroot_path}/usr/local/bin/settings.sh https://raw.githubusercontent.com/ctlos/ctlos-sh/master/settings.sh
 chmod +x ${chroot_path}/usr/local/bin/settings.sh
