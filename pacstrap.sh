@@ -5,10 +5,10 @@ chroot_path=$(cat /tmp/chroot_path.tmp)
 [[ -d $chroot_path ]] || { echo "error: chroot path"; exit; }
 
 if [[ $(command -v reflector) && $(command -v curl) ]]; then
-  reflector -a 12 -l 30 -f 30 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
+  reflector -a 12 -l 15 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
 else
   pacman -S reflector curl --noconfirm
-  reflector -a 12 -l 30 -f 30 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
+  reflector -a 12 -l 15 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
 fi
 
 if [[ $(command -v pacstrap) ]]; then
