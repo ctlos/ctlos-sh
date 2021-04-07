@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## calamares module baseinstall
+
 chroot_path=$(cat /tmp/chroot_path.tmp)
 
 [[ -d $chroot_path ]] || { echo "error: chroot path"; exit; }
@@ -48,7 +50,10 @@ gnu-netcat rsync zsh
 
 /usr/bin/pacstrap.sh ${chroot_path} ${PKGS[@]} $vbox_pkgs
 
-curl -s -Lo ${chroot_path}/usr/local/bin/settings.sh https://raw.githubusercontent.com/ctlos/ctlos-sh/master/settings.sh
+curl -s -o ${chroot_path}/usr/local/bin/settings.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/settings.sh
 chmod +x ${chroot_path}/usr/local/bin/settings.sh
+
+curl -s -o ${chroot_path}/usr/local/bin/system.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/system.sh
+chmod +x ${chroot_path}/usr/local/bin/system.sh
 
 echo "==== Done pacstrap.sh ===="
