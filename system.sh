@@ -5,7 +5,7 @@
 # add config iso > system
 
 chroot_path=$(cat /tmp/chroot_path.tmp)
-[[ -d $chroot_path ]] || { echo "error: chroot path"; exit; }
+[[ -d $chroot_path ]] || exit
 
 cp -rf /etc/default ${chroot_path}/etc
 cp -rf /etc/modprobe.d ${chroot_path}/etc
