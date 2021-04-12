@@ -52,7 +52,7 @@ gnu-netcat rsync zsh
 curl -s -o ${chroot_path}/usr/local/bin/settings.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/settings.sh
 chmod +x ${chroot_path}/usr/local/bin/settings.sh
 
-curl -s -o ${chroot_path}/usr/local/bin/system.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/system.sh
-chmod +x ${chroot_path}/usr/local/bin/system.sh
+curl -s -o /usr/local/bin/system.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/system.sh
+chmod +x /usr/local/bin/system.sh
 
 echo "==== Done pacstrap.sh ===="
