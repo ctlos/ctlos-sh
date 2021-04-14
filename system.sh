@@ -9,7 +9,13 @@ chroot_path=$(cat /tmp/chroot_path.tmp)
 
 cp -rf /etc/default ${chroot_path}/etc
 cp -rf /etc/modprobe.d ${chroot_path}/etc
-cp -rf /etc/pacman.d/hooks ${chroot_path}/etc/pacman.d
+
+mkdir -p ${chroot_path}/etc/pacman.d/hooks
+cp -rf /etc/pacman.d/hooks/issue.hook ${chroot_path}/etc/pacman.d/hooks
+cp -rf /etc/pacman.d/hooks/lsb-release.hook ${chroot_path}/etc/pacman.d/hooks
+cp -rf /etc/pacman.d/hooks/mirrors.hook ${chroot_path}/etc/pacman.d/hooks
+cp -rf /etc/pacman.d/hooks/os-release.hook ${chroot_path}/etc/pacman.d/hooks
+
 cp -rf /etc/sysctl.d ${chroot_path}/etc
 cp -rf /etc/udev/rules.d ${chroot_path}/etc/udev
 cp -rf /etc/X11/xorg.conf.d ${chroot_path}/etc/X11
