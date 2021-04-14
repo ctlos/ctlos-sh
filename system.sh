@@ -9,7 +9,6 @@ chroot_path=$(cat /tmp/chroot_path.tmp)
 
 cp -rf /etc/default ${chroot_path}/etc
 cp -rf /etc/modprobe.d ${chroot_path}/etc
-cp -rf /etc/pacman.d/gnupg/gpg.conf ${chroot_path}/etc/pacman.d/gnupg
 cp -rf /etc/pacman.d/hooks ${chroot_path}/etc/pacman.d
 cp -rf /etc/sysctl.d ${chroot_path}/etc
 cp -rf /etc/udev/rules.d ${chroot_path}/etc/udev
