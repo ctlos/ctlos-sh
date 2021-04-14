@@ -7,7 +7,10 @@
 chroot_path=$(cat /tmp/chroot_path.tmp)
 [[ -d $chroot_path ]] || exit
 
-cp -rf /etc/default ${chroot_path}/etc
+mkdir -p ${chroot_path}/etc/default
+cp -rf /etc/default/grub ${chroot_path}/etc/default
+cp -rf /etc/default/useradd ${chroot_path}/etc/default
+
 cp -rf /etc/modprobe.d ${chroot_path}/etc
 
 mkdir -p ${chroot_path}/etc/pacman.d/hooks
