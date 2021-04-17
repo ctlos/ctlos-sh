@@ -35,6 +35,8 @@ cp -rf /etc/systemd/journald.conf.d ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/logind.conf.d ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/network ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/system ${chroot_path}/etc/systemd
+rm ${chroot_path}/etc/systemd/system/display-manager.service
+rm -rf ${chroot_path}/etc/systemd/system/multi-user.target.wants/{choose-mirror.service,pacman-init.service}
 
 cp -rf /root/.config ${chroot_path}/root
 cp -rf /root/.gtkrc-2.0 ${chroot_path}/root

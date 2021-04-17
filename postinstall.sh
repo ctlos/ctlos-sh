@@ -4,6 +4,7 @@
 # run chroot
 
 enable_dm() {
+  rm /etc/systemd/system/display-manager.service
   [[ $(pacman -Qs sddm) ]] && systemctl enable sddm
   [[ $(pacman -Qs lightdm) ]] && systemctl enable lightdm
   [[ $(pacman -Qs lxdm) ]] && systemctl enable lxdm
