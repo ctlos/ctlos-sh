@@ -49,7 +49,6 @@ cp -rf /usr/local/bin/vbox-check ${chroot_path}/usr/local/bin
 cp -rf /usr/share/icons/default ${chroot_path}/usr/share/icons
 cp -rf /usr/share/icons/linebit ${chroot_path}/usr/share/icons
 
-echo "QT_QPA_PLATFORMTHEME=qt5ct" >> ${chroot_path}/etc/environment
 echo "FONT=cyr-sun16" >> ${chroot_path}/etc/vconsole.conf
 
 rm /usr/local/bin/system.sh
