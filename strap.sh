@@ -8,29 +8,24 @@ mirror_pkg=ctlos-mirrorlist-stable-1-x86_64
 MIRROR_F="ctlos-mirrorlist"
 MIRROR_AUR="ctlos-aur"
 
-err()
-{
+err() {
   echo >&2 "$(tput bold; tput setaf 1)[-] ERROR: ${*}$(tput sgr0)"
 
   exit 1337
 }
-warn()
-{
+warn() {
   echo >&2 "$(tput bold; tput setaf 1)[!] WARNING: ${*}$(tput sgr0)"
 }
-msg()
-{
+msg() {
   echo "$(tput bold; tput setaf 2)[+] ${*}$(tput sgr0)"
 }
-check_priv()
-{
+check_priv() {
   if [ "$(id -u)" -ne 0 ]; then
     err "you must be root"
   fi
 }
 
-make_tmp_dir()
-{
+make_tmp_dir() {
   tmp="$(mktemp -d /tmp/ctlos_strap.XXXXXXXX)"
 
   trap 'rm -rf $tmp' EXIT
@@ -38,8 +33,7 @@ make_tmp_dir()
   cd "$tmp" || err "Could not enter directory $tmp"
 }
 
-check_internet()
-{
+check_internet() {
   tool='curl'
   tool_opts='-s --connect-timeout 8'
 
@@ -51,14 +45,12 @@ check_internet()
 }
 
 # retrieve the Ctlos Linux keyring
-fetch_keyring()
-{
+fetch_keyring() {
   curl -s -O $baseurl/$keyring_pkg.pkg.tar.zst{,.sig}
 }
 
 # verify the keyring signature
-verify_keyring()
-{
+verify_keyring() {
   if [ -f "/usr/share/pacman/keyrings/ctlos.gpg" ]; then
     msg 'gpg key installed /usr/share/pacman/keyrings/ctlos.gpg'
   else
@@ -71,22 +63,19 @@ verify_keyring()
 }
 
 # delete the signature files
-delete_signature()
-{
+delete_signature() {
   if [ -f "$keyring_pkg.pkg.tar.zst.sig" ]; then
     rm $keyring_pkg.pkg.tar.zst.sig
   fi
 }
 
 # make sure /etc/pacman.d/gnupg is usable
-check_pacman_gnupg()
-{
+check_pacman_gnupg() {
   pacman-key --init
 }
 
 # install the keyring
-install_keyring()
-{
+install_keyring() {
   if ! pacman --config /dev/null --noconfirm --overwrite='*' \
     -U $keyring_pkg.pkg.tar.zst ; then
     err 'keyring installation failed'
@@ -94,8 +83,7 @@ install_keyring()
   pacman-key --populate
 }
 
-install_mirrors()
-{
+install_mirrors() {
   curl -s -O $baseurl/$mirror_pkg.pkg.tar.zst{,.sig}
 
   if [ -f "$mirror_pkg.pkg.tar.zst.sig" ]; then
@@ -109,8 +97,7 @@ install_mirrors()
 }
 
 # update pacman.conf
-update_pacman_conf()
-{
+update_pacman_conf() {
   # delete ctlos related entries if existing
   sed -i '/ctlos_repo/{N;d}' /etc/pacman.conf
 
@@ -126,13 +113,12 @@ add_ctlos_aur() {
 
 [ctlos-aur]
 SigLevel = Optional TrustAll
-Server = https://cloud.ctlos.ru/ctlos-aur
+Server = https://ctlos.duckdns.org/ctlos-aur
 EOF
 }
 
 # synchronize and update
-pacman_update()
-{
+pacman_update() {
   if pacman -Syy; then
     return $SUCCESS
   fi
@@ -143,8 +129,7 @@ pacman_update()
 }
 
 
-pacman_upgrade()
-{
+pacman_upgrade() {
   echo 'perform full system upgrade? (pacman -Su) [Yn]:'
   read conf < /dev/tty
   case "$conf" in
@@ -154,8 +139,7 @@ pacman_upgrade()
 }
 
 # setup ctlos linux
-ctlos_setup()
-{
+ctlos_setup() {
   check_priv
   msg 'installing ctlos keyring...'
   make_tmp_dir
