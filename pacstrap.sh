@@ -33,7 +33,7 @@ fi
 _vbox() {
   result=$(systemd-detect-virt)
   if [ $result = "oracle" ]; then
-    vbox_pkgs="virtualbox-guest-utils virtualbox-guest-dkms"
+    vbox_pkgs="virtualbox-guest-utils"
   elif [ $result = "vmware" ]; then
     vbox_pkgs=""
   else
