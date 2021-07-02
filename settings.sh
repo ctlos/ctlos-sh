@@ -15,6 +15,7 @@ keyserver hkps://hkps.pool.sks-keyservers.net:443
 keyserver hkp://ipv4.pool.sks-keyservers.net:11371
 keyserver hkp://pgp.mit.edu
 keyserver hkp://keys.gnupg.net
+keyserver hkp://keyserver.ubuntu.com
 LOL
 
 rm /usr/local/bin/settings.sh
