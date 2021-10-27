@@ -44,7 +44,7 @@ cp -rf /etc/systemd/system/default.service ${chroot_path}/etc/systemd/system
 cp -rf /etc/systemd/system/vbox-check.service ${chroot_path}/etc/systemd/system
 
 rm ${chroot_path}/etc/systemd/system/display-manager.service
-rm -rf ${chroot_path}/etc/systemd/system/multi-user.target.wants/{choose-mirror.service,pacman-init.service}
+rm -rf ${chroot_path}/etc/systemd/system/multi-user.target.wants/{choose-mirror.service,pacman-init.service,reflector.service}
 
 cp -rf /root/.config ${chroot_path}/root
 cp -rf /root/.gtkrc-2.0 ${chroot_path}/root
