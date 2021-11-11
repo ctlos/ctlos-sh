@@ -1,3 +1,5 @@
 # ctlos-sh
 
-`curl -OL git.io/strap.sh && sudo sh strap.sh`
+```bash
+curl -OL git.io/strap.sh && sudo sh strap.sh
+```
