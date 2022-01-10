@@ -41,7 +41,7 @@ cp -rf /etc/systemd/system/choose-mirror.service ${chroot_path}/etc/systemd/syst
 cp -rf /etc/systemd/system/pacman-init.service ${chroot_path}/etc/systemd/system
 cp -rf /etc/systemd/system/etc-pacman.d-gnupg.mount ${chroot_path}/etc/systemd/system
 cp -rf /etc/systemd/system/default.service ${chroot_path}/etc/systemd/system
-cp -rf /etc/systemd/system/vbox-check.service ${chroot_path}/etc/systemd/system
+cp -rf /etc/systemd/system/ctlos-system.service ${chroot_path}/etc/systemd/system
 
 rm ${chroot_path}/etc/systemd/system/display-manager.service
 
@@ -51,7 +51,7 @@ cp -rf /root/.gtkrc-2.0 ${chroot_path}/root
 cp -rf /usr/local/bin/cleaner.sh ${chroot_path}/usr/local/bin
 cp -rf /usr/local/bin/multilock.sh ${chroot_path}/usr/local/bin
 cp -rf /usr/local/bin/show_desktop ${chroot_path}/usr/local/bin
-cp -rf /usr/local/bin/vbox-check ${chroot_path}/usr/local/bin
+cp -rf /usr/local/bin/ctlos-system ${chroot_path}/usr/local/bin
 
 cp -rf /usr/share/icons/default ${chroot_path}/usr/share/icons
 cp -rf /usr/share/icons/linebit ${chroot_path}/usr/share/icons
