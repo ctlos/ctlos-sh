@@ -10,7 +10,6 @@ MIRROR_AUR="ctlos-aur"
 
 err() {
   echo >&2 "$(tput bold; tput setaf 1)[-] ERROR: ${*}$(tput sgr0)"
-
   exit 1337
 }
 warn() {
@@ -128,7 +127,6 @@ pacman_update() {
   return $FAILURE
 }
 
-
 pacman_upgrade() {
   echo 'perform full system upgrade? (pacman -Su) [Yn]:'
   read conf < /dev/tty
@@ -169,4 +167,25 @@ ctlos_setup() {
   msg 'Ctlos Linux repo is ready!'
 }
 
-ctlos_setup
+if [ "$1" != "-an" ]; then
+  ctlos_setup
+fi
+
+## archinstall config
+if [ "$1" = "-a" -o "$1" = "-an" ]; then
+curl -LO kutt.it/config-json
+curl -LO kutt.it/disk-json
+
+if ls | grep "json"; then
+cat <<EOF
+
+nano /root/config-json
+nano /root/disk-json
+
+https://archinstall.readthedocs.io/installing/guided.html
+archinstall --help
+
+archinstall --config /root/config-json --disk_layouts=/root/disk-json
+EOF
+fi
+fi
