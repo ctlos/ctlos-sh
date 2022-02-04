@@ -173,8 +173,8 @@ fi
 
 ## archinstall config
 if [ "$1" = "-a" -o "$1" = "-an" ]; then
-curl -LO kutt.it/config-json
-curl -LO kutt.it/disk-json
+curl -s -LO kutt.it/config-json
+curl -s -LO kutt.it/disk-json
 
 if ls | grep "json"; then
 cat <<EOF
