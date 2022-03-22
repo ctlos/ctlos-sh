@@ -112,7 +112,7 @@ add_ctlos_aur() {
 
 [ctlos-aur]
 SigLevel = Optional TrustAll
-Server = https://cloud.ctlos.ru/ctlos-aur
+Include = /etc/pacman.d/$MIRROR_F
 EOF
 }
 
