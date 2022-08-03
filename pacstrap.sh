@@ -9,10 +9,10 @@ exec > >(tee /var/log/ctlos.log) 2>&1
 
 if [[ $(command -v reflector) && $(command -v curl) ]]; then
   pacman -Syy archlinux-keyring --noconfirm
-  reflector -a 12 -l 15 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
+  reflector -a 12 -l 5 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
 else
   pacman -Syy reflector curl --noconfirm
-  reflector -a 12 -l 15 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
+  reflector -a 12 -l 5 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
   pacman -S archlinux-keyring --noconfirm
 fi
 
