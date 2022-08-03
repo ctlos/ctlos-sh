@@ -5,6 +5,8 @@
 chroot_path=$(cat /tmp/chroot_path.tmp)
 [[ -d $chroot_path ]] || exit
 
+exec > >(tee /var/log/ctlos.log) 2>&1
+
 if [[ $(command -v reflector) && $(command -v curl) ]]; then
   reflector -a 12 -l 15 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
 else
