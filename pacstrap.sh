@@ -11,9 +11,9 @@ if [[ $(command -v reflector) && $(command -v curl) ]]; then
   pacman -Syy archlinux-keyring --noconfirm
   reflector -a 12 -l 5 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
 else
-  pacman -Syy reflector curl --noconfirm
+  pacman -Syy archlinux-keyring reflector curl --noconfirm
+  pacman -Syy --noconfirm
   reflector -a 12 -l 5 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
-  pacman -S archlinux-keyring --noconfirm
 fi
 
 if [[ $(command -v pacstrap) ]]; then
