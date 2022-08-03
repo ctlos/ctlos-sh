@@ -8,10 +8,12 @@ chroot_path=$(cat /tmp/chroot_path.tmp)
 exec > >(tee /var/log/ctlos.log) 2>&1
 
 if [[ $(command -v reflector) && $(command -v curl) ]]; then
+  pacman -Syy archlinux-keyring --noconfirm
   reflector -a 12 -l 15 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
 else
-  pacman -S reflector curl --noconfirm
+  pacman -Syy reflector curl --noconfirm
   reflector -a 12 -l 15 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
+  pacman -S archlinux-keyring --noconfirm
 fi
 
 if [[ $(command -v pacstrap) ]]; then
