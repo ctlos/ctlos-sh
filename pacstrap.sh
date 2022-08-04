@@ -1,16 +1,15 @@
 #!/bin/bash
 
-## calamares module baseinstall
+### calamares module baseinstall
 
 chroot_path=$(cat /tmp/chroot_path.tmp)
 [[ -d $chroot_path ]] || exit
 
 exec > >(tee /var/log/ctlos.log) 2>&1
 
-pacman -Syy archlinux-keyring --noconfirm
-pacman -Syy reflector curl --noconfirm --needed
+pacman -S reflector --noconfirm --needed
 reflector -a 12 -l 5 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
-pacman -Syy --noconfirm
+pacman -Syy archlinux-keyring --noconfirm
 
 if [[ $(command -v pacstrap) ]]; then
   pacman -S arch-install-scripts --noconfirm
