@@ -4,9 +4,9 @@
 # run chroot
 # add ctlos repo
 
-curl -sO https://raw.githubusercontent.com/ctlos/ctlos-sh/master/strap.sh
-sh strap.sh
-rm strap.sh
+curl -s -o /usr/local/bin/strap.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/strap.sh
+sh /usr/local/bin/strap.sh
+rm /usr/local/bin/strap.sh
 
 mkdir /media
 
