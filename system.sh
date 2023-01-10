@@ -8,6 +8,7 @@ chroot_path=$(cat /tmp/chroot_path.tmp)
 [[ -d $chroot_path ]] || exit
 
 mkdir -p ${chroot_path}/etc/default
+cp -rf /etc/resolv.conf ${chroot_path}/etc
 cp -rf /etc/default/grub ${chroot_path}/etc/default
 cp -rf /etc/default/useradd ${chroot_path}/etc/default
 
@@ -25,11 +26,11 @@ cp -rf /etc/X11/xorg.conf.d ${chroot_path}/etc/X11
 cp -rf /etc/xdg/reflector ${chroot_path}/etc/xdg
 cp -rf /etc/motd ${chroot_path}/etc
 cp -rf /etc/ntp.conf ${chroot_path}/etc
-cp -rf /etc/sddm.conf ${chroot_path}/etc
+cp -rf /etc/sddm.conf.d/sddm.conf ${chroot_path}/etc/sddm.conf.d
 
 cp -rf /etc/pamac.conf ${chroot_path}/etc
 cp -rf /etc/pacman.conf ${chroot_path}/etc
-sed -i "/\[chaotic-aur\]/,+2d" ${chroot_path}/etc/pacman.conf
+# sed -i "/\[chaotic-aur\]/,+2d" ${chroot_path}/etc/pacman.conf
 
 cp -rf /etc/systemd/journald.conf.d ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/logind.conf.d ${chroot_path}/etc/systemd
