@@ -4,10 +4,6 @@
 # run chroot
 # add ctlos repo
 
-curl -s -o /usr/local/bin/strap.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/strap.sh
-sh /usr/local/bin/strap.sh
-rm /usr/local/bin/strap.sh
-
 mkdir /media
 
 cat <<LOL >>/etc/pacman.d/gnupg/gpg.conf
