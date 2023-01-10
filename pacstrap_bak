@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# auto mount removed since calamares already does the job, pacstrap-old get error "/proc already mounted" for example.
+
 #
 # Assumptions:
 #  1) User has partitioned, formatted, and mounted partitions on /mnt
@@ -263,25 +265,19 @@ fstype_has_fsck() {
 hostcache=0
 copykeyring=1
 copymirrorlist=1
-pacmode=-Sy
 
 usage() {
   cat <<EOF
 usage: ${0##*/} [options] root [packages...]
-
   Options:
     -C <config>    Use an alternate config file for pacman
     -c             Use the package cache on the host, rather than the target
     -G             Avoid copying the host's pacman keyring to the target
     -i             Prompt for package confirmation when needed (run interactively)
     -M             Avoid copying the host's mirrorlist to the target
-    -U             Use pacman -U to install packages
-
     -h             Print this help message
-
 pacstrap installs packages to the specified new root directory. If no packages
 are given, pacstrap defaults to the "base" group.
-
 EOF
 }
 
@@ -292,7 +288,7 @@ fi
 
 (( EUID == 0 )) || die 'This script must be run with root privileges'
 
-while getopts ':C:cdGiMU' flag; do
+while getopts ':C:cdGiM' flag; do
   case $flag in
     C)
       pacman_config=$OPTARG
@@ -311,9 +307,6 @@ while getopts ':C:cdGiMU' flag; do
       ;;
     M)
       copymirrorlist=0
-      ;;
-    U)
-      pacmode=-U
       ;;
     :)
       die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "$OPTARG"
@@ -352,21 +345,8 @@ mkdir -m 0555 -p "$newroot"/{sys,proc}
 # mount API filesystems
 chroot_setup "$newroot" || die "failed to setup chroot %s" "$newroot"
 
-if (( copykeyring )); then
-  # if there's a keyring on the host, copy it into the new root, unless it exists already
-  if [[ -d /etc/pacman.d/gnupg && ! -d $newroot/etc/pacman.d/gnupg ]]; then
-    cp -a /etc/pacman.d/gnupg "$newroot/etc/pacman.d/"
-  fi
-fi
 
 msg 'Installing packages to %s' "$newroot"
-if ! unshare --fork --pid pacman -r "$newroot" $pacmode "${pacman_args[@]}"; then
+if ! pacman -r "$newroot" -Sy "${pacman_args[@]}"; then
   die 'Failed to install packages to new root'
 fi
-
-if (( copymirrorlist )); then
-  # install the host's mirrorlist onto the new root
-  cp -a /etc/pacman.d/mirrorlist "$newroot/etc/pacman.d/"
-fi
-
-# vim: et ts=2 sw=2 ft=sh:
