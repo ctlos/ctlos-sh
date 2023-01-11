@@ -2,7 +2,11 @@
 
 ## calamares shellprocess_settings.conf
 # run chroot
-# add ctlos repo
+
+haveged -w 1024
+pacman-key --init
+pkill haveged
+pacman-key --populate
 
 mkdir /media
 
