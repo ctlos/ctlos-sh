@@ -119,8 +119,6 @@ chroot_setup() {
   CHROOT_ACTIVE_MOUNTS=()
   [[ $(trap -p EXIT) ]] && die '(BUG): attempting to overwrite existing EXIT trap'
   trap 'chroot_teardown' EXIT
-
-  chroot_add_mount run "$1/run" -t tmpfs -o nosuid,nodev,mode=0755 &&
 }
 
 chroot_teardown() {
@@ -151,6 +149,7 @@ unshare_setup() {
   trap 'unshare_teardown' EXIT
 
   chroot_add_mount_lazy "$1" "$1" --bind &&
+  chroot_add_mount proc "$1/proc" -t proc -o nosuid,noexec,nodev &&
   chroot_add_mount_lazy /sys "$1/sys" --rbind &&
   chroot_add_link "$1/proc/self/fd" "$1/dev/fd" &&
   chroot_add_link "$1/proc/self/fd/0" "$1/dev/stdin" &&
@@ -163,6 +162,7 @@ unshare_setup() {
   chroot_bind_device /dev/urandom "$1/dev/urandom" &&
   chroot_bind_device /dev/zero "$1/dev/zero" &&
   chroot_add_mount run "$1/run" -t tmpfs -o nosuid,nodev,mode=0755 &&
+  chroot_add_mount tmp "$1/tmp" -t tmpfs -o mode=1777,strictatime,nodev,nosuid
 }
 
 unshare_teardown() {

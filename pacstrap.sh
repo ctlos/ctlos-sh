@@ -22,7 +22,7 @@ if [[ ! -f "/usr/bin/pacstrap.sh" ]]; then
 #   -e '/chroot_add_mount udev/d' \
 #   -e '/chroot_add_mount devpts/d' \
 #   -e '/chroot_add_mount shm/d' \
-#   -e '/chroot_add_mount \/run/d' \
+#   -e '/chroot_add_mount run/d' \
 #   -e '/chroot_add_mount tmp/d' \
 #   -e '/efivarfs \"/d' /usr/bin/pacstrap >/usr/bin/pacstrap.sh
 curl -s -Lo /usr/bin/pacstrap.sh https://raw.githubusercontent.com/ctlos/ctlos-sh/master/pacstrap_bak
