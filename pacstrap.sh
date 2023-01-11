@@ -61,9 +61,6 @@ curl -s -o ${chroot_path}/usr/local/bin/postinstall.sh -L https://raw.githubuser
 chmod +x ${chroot_path}/usr/local/bin/postinstall.sh
 
 # copy to chroot
-rm -rfv ${chroot_path}/etc/resolv.conf
-echo "!!! copy resolv.conf"
-cp -rfLv /etc/resolv.conf ${chroot_path}/etc
 mkdir -p ${chroot_path}/etc/pacman.d
 cp -rfv /etc/pacman.d/*mirrorlist ${chroot_path}/etc/pacman.d
 
