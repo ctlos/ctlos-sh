@@ -60,4 +60,11 @@ chmod +x /usr/local/bin/system.sh
 curl -s -o ${chroot_path}/usr/local/bin/postinstall.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/postinstall.sh
 chmod +x ${chroot_path}/usr/local/bin/postinstall.sh
 
+# copy to chroot
+rm -rf ${chroot_path}/etc/resolv.conf
+cp -rfL /etc/resolv.conf ${chroot_path}/etc
+mkdir -p ${ROOT}/etc/pacman.d
+cp -rf /etc/pacman.d/mirrorlist ${chroot_path}/etc/pacman.d
+cp -rfa /etc/pacman.d/gnupg ${ROOT}/etc/pacman.d
+
 echo "==== Done pacstrap.sh ===="
