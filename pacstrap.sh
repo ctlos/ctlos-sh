@@ -63,8 +63,8 @@ chmod +x ${chroot_path}/usr/local/bin/postinstall.sh
 # copy to chroot
 rm -rf ${chroot_path}/etc/resolv.conf
 cp -rfL /etc/resolv.conf ${chroot_path}/etc
-mkdir -p ${chroot_path}/etc/pacman.d
-cp -rf /etc/pacman.d/mirrorlist ${chroot_path}/etc/pacman.d
-cp -rfa /etc/pacman.d/gnupg ${chroot_path}/etc/pacman.d
+# mkdir -p ${chroot_path}/etc/pacman.d
+# cp -rf /etc/pacman.d/mirrorlist ${chroot_path}/etc/pacman.d
+# cp -rfa /etc/pacman.d/gnupg ${chroot_path}/etc/pacman.d
 
 echo "==== Done pacstrap.sh ===="
