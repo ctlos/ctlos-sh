@@ -7,6 +7,8 @@
 chroot_path=$(cat /tmp/chroot_path.tmp)
 [[ -d $chroot_path ]] || exit
 
+cp -rf /var/log/ctlos.log ${chroot_path}/var/log
+
 mkdir -p ${chroot_path}/etc/default
 cp -rf /etc/default/grub ${chroot_path}/etc/default
 cp -rf /etc/default/useradd ${chroot_path}/etc/default
