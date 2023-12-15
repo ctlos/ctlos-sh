@@ -16,6 +16,7 @@ cp -rf /etc/default/useradd ${chroot_path}/etc/default
 
 cp -rf /etc/modprobe.d ${chroot_path}/etc
 cp -rf /etc/polkit-1 ${chroot_path}/etc
+cp -rf /etc/machine-id ${chroot_path}/etc
 
 mkdir -p ${chroot_path}/etc/pacman.d/hooks
 cp -rf /etc/pacman.d/hooks/issue.hook ${chroot_path}/etc/pacman.d/hooks
