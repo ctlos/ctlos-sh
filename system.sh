@@ -11,6 +11,7 @@ cp -rf /var/log/ctlos.log ${chroot_path}/var/log
 
 mkdir -p ${chroot_path}/etc/default
 cp -rf /etc/default/grub ${chroot_path}/etc/default
+cp -rf /etc/grub.d ${chroot_path}/etc
 cp -rf /etc/default/useradd ${chroot_path}/etc/default
 
 cp -rf /etc/modprobe.d ${chroot_path}/etc
