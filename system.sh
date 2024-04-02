@@ -33,7 +33,7 @@ cp -rf /etc/ntp.conf ${chroot_path}/etc
 cp -rf /etc/sddm.conf.d ${chroot_path}/etc
 
 if [ -f "${chroot_path}/etc/sddm.conf" ]; then
-    echo "/etc/sddm.conf"
+    cat ${chroot_path}/etc/sddm.conf
 else
     touch ${chroot_path}/etc/sddm.conf
     cat <<LOL >${chroot_path}/etc/sddm.conf
