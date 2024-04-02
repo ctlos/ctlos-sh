@@ -32,18 +32,18 @@ cp -rf /etc/motd ${chroot_path}/etc
 cp -rf /etc/ntp.conf ${chroot_path}/etc
 cp -rf /etc/sddm.conf.d ${chroot_path}/etc
 
-if [ -f "${chroot_path}/etc/sddm.conf" ]; then
-    cat ${chroot_path}/etc/sddm.conf
-else
-    touch ${chroot_path}/etc/sddm.conf
-    cat <<LOL >${chroot_path}/etc/sddm.conf
-[Autologin]
-Relogin=false
-## /usr/share/xsessions
-Session=
-User=
-LOL
-fi
+# if [ -f "${chroot_path}/etc/sddm.conf" ]; then
+#     cat ${chroot_path}/etc/sddm.conf
+# else
+#     touch ${chroot_path}/etc/sddm.conf
+#     cat <<LOL >${chroot_path}/etc/sddm.conf
+# [Autologin]
+# Relogin=false
+# ## /usr/share/xsessions
+# Session=
+# User=
+# LOL
+# fi
 
 cp -rf /etc/pamac.conf ${chroot_path}/etc
 cp -rf /etc/pacman.conf ${chroot_path}/etc
