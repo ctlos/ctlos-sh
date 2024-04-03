@@ -20,6 +20,7 @@ enable_dm() {
   # systemctl set-default graphical.target
 }
 
+# fix calamares 3.3.5, plasma 6 xsession
 _conf() {
   if [ -f "/etc/sddm.conf" ]; then
     sed -i "s/Session=.*/Session=plasmax11/" /etc/sddm.conf
