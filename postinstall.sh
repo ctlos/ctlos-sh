@@ -20,7 +20,14 @@ enable_dm() {
   # systemctl set-default graphical.target
 }
 
+_conf() {
+  if [ -f "/etc/sddm.conf" ]; then
+    sed -i "s/Session=.*/Session=plasmax11/" /etc/sddm.conf
+  fi
+}
+
 clean_post
 enable_dm
+_conf
 
 rm /usr/local/bin/postinstall.sh
