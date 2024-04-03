@@ -43,7 +43,7 @@ cp -rf /etc/sddm.conf.d ${chroot_path}/etc
 # Session=
 # User=
 # LOL
-fi
+# fi
 
 cp -rf /etc/pamac.conf ${chroot_path}/etc
 cp -rf /etc/pacman.conf ${chroot_path}/etc
