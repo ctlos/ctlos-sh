@@ -25,6 +25,10 @@ _conf() {
   if [ -f "/etc/sddm.conf" && -f "/usr/share/xsessions/plasmax11.desktop" ]; then
     sed -i "s/Session=.*/Session=plasmax11/" /etc/sddm.conf
   fi
+
+  echo "QT_QPA_PLATFORMTHEME=qt5ct" > /etc/environment
+  #echo "QT_STYLE_OVERRIDE=kvantum" > /etc/environment
+  echo "GTK_THEME=Ctlos-Dark" >> /etc/environment
 }
 
 clean_post
