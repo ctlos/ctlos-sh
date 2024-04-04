@@ -22,7 +22,7 @@ enable_dm() {
 
 # fix calamares 3.3.5, plasma 6 xsession
 _conf() {
-  if [ -f "/etc/sddm.conf" ]; then
+  if [ -f "/etc/sddm.conf" && -f "/usr/share/xsessions/plasmax11.desktop" ]; then
     sed -i "s/Session=.*/Session=plasmax11/" /etc/sddm.conf
   fi
 }
