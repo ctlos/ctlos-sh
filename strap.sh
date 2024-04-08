@@ -4,7 +4,7 @@
 
 baseurl=https://raw.githubusercontent.com/ctlos/ctlos_repo/master/x86_64
 keyring_pkg=ctlos-keyring-stable-2-x86_64
-mirror_pkg=ctlos-mirrorlist-stable-1-x86_64
+mirror_pkg=ctlos-mirrorlist-stable-3-x86_64
 MIRROR_F="ctlos-mirrorlist"
 MIRROR_AUR="ctlos-aur"
 
