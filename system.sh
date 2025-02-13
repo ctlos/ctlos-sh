@@ -14,7 +14,7 @@ cp -rf /etc/default/grub ${chroot_path}/etc/default
 cp -rf /etc/grub.d ${chroot_path}/etc
 cp -rf /etc/default/useradd ${chroot_path}/etc/default
 
-cp -rf /etc/modprobe.d ${chroot_path}/etc
+# cp -rf /etc/modprobe.d ${chroot_path}/etc
 cp -rf /etc/polkit-1 ${chroot_path}/etc
 cp -rf /etc/machine-id ${chroot_path}/etc
 

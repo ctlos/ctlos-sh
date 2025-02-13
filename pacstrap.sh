@@ -42,8 +42,8 @@ _vbox() {
 _vbox
 
 PKGS=(
-base sudo grub reflector lsb-release nano iwd haveged
-gnu-netcat rsync zsh
+base sudo grub reflector lsb-release iwd nano haveged
+rsync zsh
 )
 
 /usr/bin/pacstrap.sh ${chroot_path} ${PKGS[@]} $vbox_pkgs
