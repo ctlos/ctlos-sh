@@ -33,6 +33,8 @@ _vbox() {
   result=$(systemd-detect-virt)
   if [ $result = "oracle" ]; then
     vbox_pkgs="virtualbox-guest-utils"
+  elif [ $result = "kvm" ]; then
+    vbox_pkgs="qemu-guest-agent spice-vdagent"
   elif [ $result = "vmware" ]; then
     vbox_pkgs=""
   else
