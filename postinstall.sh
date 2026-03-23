@@ -3,7 +3,7 @@
 ## calamares shellprocess_postinstall.conf
 # run chroot
 
-clean_post() {
+_clean_post() {
   local files_rm=(
     /etc/systemd/system/multi-user.target.wants/{choose-mirror.service,pacman-init.service,reflector.service}
   )
@@ -11,7 +11,7 @@ clean_post() {
   for i in ${files_rm[*]}; do rm -rf $i; done
 }
 
-enable_dm() {
+_enable_dm() {
   rm /etc/systemd/system/display-manager.service
   [[ $(pacman -Qs sddm) ]] && systemctl enable sddm
   [[ $(pacman -Qs lightdm) ]] && systemctl enable lightdm
@@ -33,8 +33,8 @@ _conf() {
   fi
 }
 
-clean_post
-enable_dm
+_clean_post
+_enable_dm
 _conf
 
 rm /usr/local/bin/postinstall.sh

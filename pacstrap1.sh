@@ -1,0 +1,294 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-only
+
+#
+# Assumptions:
+#  1) User has partitioned, formatted, and mounted partitions on /mnt
+#  2) Network is functional
+#  3) Arguments passed to the script are valid pacman targets
+#  4) A valid mirror appears in /etc/pacman.d/mirrorlist
+#
+
+shopt -s extglob
+
+hostcache=0
+copykeyring=1
+initkeyring=0
+copymirrorlist=1
+pacman_args=()
+pacmode=-Sy
+unshare=0
+copyconf=0
+pacman_config=/etc/pacman.conf
+
+#!/hint/bash
+# SPDX-License-Identifier: GPL-2.0-only
+# shellcheck disable=SC2059 # $1 and $2 can contain the printf modifiers
+
+out() { printf "$1 $2\n" "${@:3}"; }
+error() { out "==> ERROR:" "$@"; } >&2
+warning() { out "==> WARNING:" "$@"; } >&2
+msg() { out "==>" "$@"; }
+die() { error "$@"; exit 1; }
+
+ignore_error() {
+  "$@" 2>/dev/null
+  return 0
+}
+
+chroot_add_mount() {
+  mount "$@" && CHROOT_ACTIVE_MOUNTS=("$2" "${CHROOT_ACTIVE_MOUNTS[@]}")
+}
+
+chroot_maybe_add_mount() {
+  local cond=$1; shift
+  if eval "$cond"; then
+    chroot_add_mount "$@"
+  fi
+}
+
+chroot_init() {
+  CHROOT_ACTIVE_MOUNTS=()
+  CHROOT_ACTIVE_LAZY=()
+  CHROOT_ACTIVE_FILES=()
+  [[ $(trap -p EXIT) ]] && die '(BUG): attempting to overwrite existing EXIT trap'
+  trap 'chroot_teardown' EXIT
+}
+
+chroot_teardown() {
+  if (( ${#CHROOT_ACTIVE_MOUNTS[@]} )); then
+    umount "${CHROOT_ACTIVE_MOUNTS[@]}"
+  fi
+  unset CHROOT_ACTIVE_MOUNTS
+
+  if (( ${#CHROOT_ACTIVE_LAZY[@]} )); then
+    umount --lazy "${CHROOT_ACTIVE_LAZY[@]}"
+  fi
+  unset CHROOT_ACTIVE_LAZY
+
+  if (( ${#CHROOT_ACTIVE_FILES[@]} )); then
+    rm "${CHROOT_ACTIVE_FILES[@]}"
+  fi
+  unset CHROOT_ACTIVE_FILES
+}
+
+chroot_setup() {
+  chroot_add_mount /run "$1/run" --bind --make-private &&
+}
+
+chroot_add_mount_lazy() {
+  mount "$@" && CHROOT_ACTIVE_LAZY=("$2" "${CHROOT_ACTIVE_LAZY[@]}")
+}
+
+chroot_bind_device() {
+  touch "$2" && CHROOT_ACTIVE_FILES=("$2" "${CHROOT_ACTIVE_FILES[@]}")
+  chroot_add_mount "$1" "$2" --bind
+}
+
+chroot_add_link() {
+  ln -sf "$1" "$2" && CHROOT_ACTIVE_FILES=("$2" "${CHROOT_ACTIVE_FILES[@]}")
+}
+
+unshare_setup() {
+  chroot_add_mount_lazy "$1" "$1" --bind &&
+  chroot_add_mount_lazy /sys "$1/sys" --rbind &&
+  chroot_add_link /proc/self/fd "$1/dev/fd" &&
+  chroot_add_link /proc/self/fd/0 "$1/dev/stdin" &&
+  chroot_add_link /proc/self/fd/1 "$1/dev/stdout" &&
+  chroot_add_link /proc/self/fd/2 "$1/dev/stderr" &&
+  chroot_bind_device /dev/full "$1/dev/full" &&
+  chroot_bind_device /dev/null "$1/dev/null" &&
+  chroot_bind_device /dev/random "$1/dev/random" &&
+  chroot_bind_device /dev/tty "$1/dev/tty" &&
+  chroot_bind_device /dev/urandom "$1/dev/urandom" &&
+  chroot_bind_device /dev/zero "$1/dev/zero" &&
+}
+
+pid_unshare="unshare --fork --pid"
+mount_unshare="$pid_unshare --mount --map-auto --map-root-user --setuid 0 --setgid 0"
+
+# This outputs code for declaring all variables to stdout. For example, if
+# FOO=BAR, then running
+#     declare -p FOO
+# will result in the output
+#     declare -- FOO="bar"
+# This function may be used to re-declare all currently used variables and
+# functions in a new shell.
+declare_all() {
+  # Remove read-only variables to avoid warnings. Unfortunately, declare +r -p
+  # doesn't work like it looks like it should (declaring only read-write
+  # variables). However, declare -rp will print out read-only variables, which
+  # we can then use to remove those definitions.
+  declare -p | grep -Fvf <(declare -rp)
+  # Then declare functions
+  declare -pf
+}
+
+
+usage() {
+  cat <<EOF
+usage: ${0##*/} [options] root [packages...]
+
+  Options:
+    -C <config>    Use an alternate config file for pacman
+    -c             Use the package cache on the host, rather than the target
+    -D             Skip pacman dependency checks
+    -G             Avoid copying the host's pacman keyring to the target
+    -i             Prompt for package confirmation when needed (run interactively)
+    -K             Initialize an empty pacman keyring in the target (implies '-G')
+    -M             Avoid copying the host's mirrorlist to the target
+    -N             Run in unshare mode as a regular user
+    -P             Copy the host's pacman config to the target
+    -U             Use pacman -U to install packages
+
+    -h             Print this help message
+
+pacstrap installs packages to the specified new root directory. If no packages
+are given, pacstrap defaults to the "base" group.
+
+EOF
+}
+
+pacstrap() {
+  (( EUID == 0 )) || die 'This script must be run with root privileges'
+
+  db_dir="/var/lib/pacman/"
+  gpg_dir="/etc/pacman.d/gnupg/"
+  log_dir="/var/log/"
+
+  # These can contain multiple paths. Ensure they are arrays
+  cache_dirs=("/var/cache/pacman/pkg/")
+
+  # Ensure we only override dirs if we copy the config
+  if (( copyconf )); then
+    db_dir="$(pacman-conf -c "$pacman_config" DBPath)"
+    gpg_dir="$(pacman-conf -c "$pacman_config" GPGDir)"
+    log_dir="$(dirname "$(pacman-conf -c "$pacman_config" LogFile)")"
+
+    mapfile -t cache_dirs < <( pacman-conf -c "$pacman_config" CacheDir )
+  fi
+
+  # create obligatory directories
+  msg 'Creating install root at %s' "$newroot"
+  # shellcheck disable=SC2174 # permissions are perfectly fine here
+  mkdir -m 0755 -p "$newroot/$db_dir" \
+                   "$newroot/$log_dir" \
+                   "$newroot"/etc/pacman.d
+
+  for path in "${cache_dirs[@]}"; do
+    # shellcheck disable=SC2174 # permissions are perfectly fine here
+    mkdir -m 0755 -p "$newroot/$path"
+  done
+  # shellcheck disable=SC2174 # permissions are perfectly fine here
+  mkdir -m 0555 -p "$newroot"/{run,dev,sys,proc}
+  # shellcheck disable=SC2174 # permissions are perfectly fine here
+  mkdir -m 1777 -p "$newroot"/tmp
+
+  if (( ! hostcache )); then
+    for path in "${cache_dirs[@]}"; do
+      pacman_args+=(--cachedir="$newroot/$path")
+    done
+  fi
+
+  # mount API filesystems
+  chroot_init
+  $setup "$newroot" || die "failed to setup chroot %s" "$newroot"
+
+  if [[ ! -d $newroot/$gpg_dir ]]; then
+    if (( initkeyring )); then
+      pacman-key --gpgdir "$newroot/$gpg_dir" --init
+    elif (( copykeyring )) && [[ -d $gpg_dir ]]; then
+      # if there's a keyring on the host, copy it into the new root
+      cp -a --no-preserve=ownership "$gpg_dir" "$newroot/$gpg_dir"
+    fi
+  fi
+
+  msg 'Installing packages to %s' "$newroot"
+  if ! $pid_unshare pacman -b "$newroot/$db_dir" -r "$newroot" "${pacman_args[@]}"; then
+    die 'Failed to install packages to new root'
+  fi
+
+  if (( copymirrorlist )); then
+    # install the host's mirrorlist onto the new root
+    cp -a /etc/pacman.d/mirrorlist "$newroot/etc/pacman.d/"
+  fi
+
+  if (( copyconf )); then
+    cp -a "$pacman_config" "$newroot/etc/pacman.conf"
+  fi
+}
+
+if [[ -z $1 || $1 = @(-h|--help) ]]; then
+  usage
+  exit $(( $# ? 0 : 1 ))
+fi
+
+while getopts ':C:cDGiKMNPU' flag; do
+  case $flag in
+    C)
+      pacman_config=$OPTARG
+      ;;
+    D)
+      pacman_args+=(-dd)
+      ;;
+    c)
+      hostcache=1
+      ;;
+    i)
+      interactive=1
+      ;;
+    G)
+      copykeyring=0
+      ;;
+    K)
+      initkeyring=1
+      ;;
+    M)
+      copymirrorlist=0
+      ;;
+    N)
+      unshare=1
+      ;;
+    P)
+      copyconf=1
+      ;;
+    U)
+      pacmode=-U
+      ;;
+    :)
+      die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "$OPTARG"
+      ;;
+    ?)
+      die '%s: invalid option -- '\''%s'\' "${0##*/}" "$OPTARG"
+      ;;
+  esac
+done
+shift $(( OPTIND - 1 ))
+
+(( $# )) || die "No root directory specified"
+newroot=$1
+shift
+
+[[ -d $newroot ]] || die "%s is not a directory" "$newroot"
+
+tmpfile="$(mktemp -t pacman.conf.XXXX)"
+cp "$pacman_config" "$tmpfile"
+sed -i 's/^DownloadUser/#&/' "$tmpfile"
+
+pacman_args+=("$pacmode" "${@:-base}" --config="$tmpfile" --disable-sandbox)
+
+if (( ! interactive )); then
+  pacman_args+=(--noconfirm)
+fi
+
+if (( unshare )); then
+  setup=unshare_setup
+  $mount_unshare bash -c "$(declare_all); pacstrap"
+else
+  setup=chroot_setup
+  pacstrap
+fi
+
+# TODO: There is a trap check on exit. Need to rework the trap handling with
+# hook-ins/callbacks to remove aux files
+rm "$tmpfile"
