@@ -31,6 +31,7 @@ cp -rf /etc/xdg/reflector ${chroot_path}/etc/xdg
 cp -rf /etc/motd ${chroot_path}/etc
 cp -rf /etc/ntp.conf ${chroot_path}/etc
 cp -rf /etc/sddm.conf.d ${chroot_path}/etc
+cp -rf /etc/version ${chroot_path}/etc
 
 cp -rf /etc/pamac.conf ${chroot_path}/etc
 cp -rf /etc/pacman.conf ${chroot_path}/etc
