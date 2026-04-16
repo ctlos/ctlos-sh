@@ -13,20 +13,20 @@ _clean_post() {
 
 _enable_dm() {
   rm /etc/systemd/system/display-manager.service
+  [[ $(pacman -Qs gdm) ]] && systemctl enable gdm
   [[ $(pacman -Qs sddm) ]] && systemctl enable sddm
   [[ $(pacman -Qs lightdm) ]] && systemctl enable lightdm
   [[ $(pacman -Qs lxdm) ]] && systemctl enable lxdm
-  [[ $(pacman -Qs gdm) ]] && systemctl enable gdm
   # systemctl set-default graphical.target
 }
 
-# fix calamares 3.3.5, plasma 6 xsession
 _conf() {
+  # fix calamares 3.3.5, plasma 6 xsession
   if [ -f "/etc/sddm.conf" && -f "/usr/share/xsessions/plasmax11.desktop" ]; then
     sed -i "s/Session=.*/Session=plasmax11/" /etc/sddm.conf
   fi
 
-  if [ ! -f "/usr/share/xsessions/plasmax11.desktop" ]; then
+  if [ ! -f "/usr/share/xsessions/plasmax11.desktop" && -f "/etc/gdm/custom.conf" ]; then
     echo "QT_QPA_PLATFORMTHEME=qt5ct" > /etc/environment
     echo "#QT_STYLE_OVERRIDE=kvantum" >> /etc/environment
     echo "GTK_THEME=Ctlos-Dark" >> /etc/environment
