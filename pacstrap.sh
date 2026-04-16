@@ -8,7 +8,7 @@ chroot_path=$(cat /tmp/chroot_path.tmp)
 exec > >(tee /var/log/ctlos.log) 2>&1
 
 pacman -S reflector --noconfirm --needed
-reflector -a 12 -l 10 -p https,http --sort rate --save /etc/pacman.d/mirrorlist
+reflector -p "https,http" -l 20 -f 10 --sort rate --threads 5 --save /etc/pacman.d/mirrorlist
 pacman -Syy archlinux-keyring --noconfirm
 
 if [[ $(command -v pacstrap) ]]; then

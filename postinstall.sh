@@ -31,6 +31,15 @@ _conf() {
     echo "#QT_STYLE_OVERRIDE=kvantum" >> /etc/environment
     echo "GTK_THEME=Ctlos-Dark" >> /etc/environment
   fi
+
+  if command -v gdm >/dev/null; then
+    pacman -Rnsdd sddm --noconfirm
+  fi
+
+  result=$(systemd-detect-virt)
+  if [ $result = "oracle" ]; then
+    systemctl enable vboxservice
+  fi
 }
 
 _clean_post
