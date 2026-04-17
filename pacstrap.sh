@@ -62,12 +62,6 @@ chmod +x /usr/local/bin/system.sh
 curl -s -o ${chroot_path}/usr/local/bin/postinstall.sh -L https://raw.githubusercontent.com/ctlos/ctlos-sh/master/postinstall.sh
 chmod +x ${chroot_path}/usr/local/bin/postinstall.sh
 
-echo "=== add repo archlinuxcn ==="
-pacman -U --noconfirm https://repo.archlinuxcn.org/x86_64/archlinuxcn-keyring-20250506-1-any.pkg.tar.zst
-echo -e '\n\n[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch\n' | tee -a /etc/pacman.conf >/dev/null
-tail -n 5 /etc/pacman.conf
-pacman -Syy
-
 # copy to chroot
 mkdir -p ${chroot_path}/etc/pacman.d
 cp -rfv /etc/pacman.d/*mirrorlist ${chroot_path}/etc/pacman.d
