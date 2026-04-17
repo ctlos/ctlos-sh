@@ -17,8 +17,8 @@ pacman-key --populate
 pkill haveged
 
 cat <<LOL >>/etc/pacman.d/gnupg/gpg.conf
-keyserver = keys.openpgp.org
-keyserver = keyserver.ubuntu.com
+keyserver = hkps://keys.openpgp.org
+keyserver = hkps://keyserver.ubuntu.com
 LOL
 
 rm /usr/local/bin/settings.sh
