@@ -4,8 +4,8 @@
 # run chroot
 
 echo "=== add repo archlinuxcn ==="
+# !! add pacman.conf | pacstrap.sh
 pacman -U --noconfirm https://repo.archlinuxcn.org/x86_64/archlinuxcn-keyring-20250506-1-any.pkg.tar.zst
-echo -e '\n\n[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch\n' | tee -a /etc/pacman.conf >/dev/null
 tail -n 5 /etc/pacman.conf
 pacman -Syy
 
