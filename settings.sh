@@ -5,7 +5,7 @@
 
 echo "=== add repo archlinuxcn ==="
 # !! add pacman.conf | pacstrap.sh
-pacman -U --noconfirm https://repo.archlinuxcn.org/x86_64/archlinuxcn-keyring-20250506-1-any.pkg.tar.zst
+pacman -U --noconfirm https://repo.archlinuxcn.org/x86_64/archlinuxcn-keyring-20250531-1-any.pkg.tar.zst
 tail -n 5 /etc/pacman.conf
 pacman -Syy
 
