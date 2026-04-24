@@ -42,6 +42,8 @@ cp -rf /etc/systemd/journald.conf.d ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/logind.conf.d ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/network ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/networkd.conf.d ${chroot_path}/etc/systemd
+cp -rf /etc/systemd/system-generators ${chroot_path}/etc/systemd
+cp -rf /etc/systemd/timesyncd.conf.d ${chroot_path}/etc/systemd
 cp -rf /etc/systemd/zram-generator.conf ${chroot_path}/etc/systemd
 
 # cp -rf /etc/systemd/system ${chroot_path}/etc/systemd
