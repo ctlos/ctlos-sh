@@ -116,7 +116,7 @@ btrfs-progs
 # dhcpcd netctl iwd
 networkmanager
 wget git rsync gnu-netcat pv bash-completion htop tmux zsh
-fastfetch inxi starship zsh-autosuggestions micro
+starship zsh-autosuggestions fastfetch inxi micro
 zip unzip unrar p7zip gzip bzip2 zlib hdparm nvme-cli
 xorg-xkill xorg-xrdb
 xf86-input-libinput xf86-input-vmmouse
@@ -125,36 +125,36 @@ xf86-input-libinput xf86-input-vmmouse
 xf86-video-amdgpu xf86-video-vesa
 pipewire pipewire-audio pipewire-pulse lib32-pipewire pipewire-alsa pipewire-jack
 gst-plugin-pipewire wireplumber
-zram-generator cpupower ananicy-cpp
-# Графический мост
-egl-wayland xorg-xwayland
-# Для встройки
-mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
-libva-mesa-driver lib32-libva-mesa-driver mesa-vdpau lib32-mesa-vdpau
-vkd3d lib32-vkd3d v4l2loopback-dkms
-# nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime
-plasma-login-manager plasma-meta fwupd xdg-desktop-portal-kde packagekit-qt6 kvantum
-konsole dolphin ark ffmpegthumbs kwalletmanager kdeconnect gwenview
-baloo kcalc partitionmanager
-ttf-jetbrains-mono-nerd
-firefox firefox-i18n-ru firefox-ublock-origin timeshift telegram-desktop
-# brave-bin vlc qbittorrent
-# Утилиты мониторинга и управления
-nvtop btop openrgb piper amdgpu_top gwe
-# game
-steam lutris
-# Нужен для работы nice с отрицательными значениями (приоритет процесса) без root-прав
-libcap
-# Содержит taskset (привязка к ядрам). Обычно уже есть в системе, но проверь
-util-linux
-# Содержит powerprofilesctl для переключения режимов энергопотребления
-power-profiles-daemon
-# Отключает энергосбережение, повышает приоритет процесса и меняет "губернатор" CPU на performance
-gamemode lib32-gamemode
-# Микро-композитор от Valve. Маст-хэв для 240Hz. Он позволяет запускать игру в изолированном слое
-gamescope
-# Лучший оверлей. Показывает FPS, температуру, загрузку конкретных ядер и использование VRAM
-mangohud lib32-mangohud
+# zram-generator cpupower ananicy-cpp
+# # Графический мост
+# egl-wayland xorg-xwayland
+# # Для встройки
+# mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
+# libva-mesa-driver lib32-libva-mesa-driver mesa-vdpau lib32-mesa-vdpau
+# vkd3d lib32-vkd3d v4l2loopback-dkms
+# # nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime
+# plasma-login-manager plasma-meta fwupd xdg-desktop-portal-kde packagekit-qt6 kvantum
+# konsole dolphin ark ffmpegthumbs kwalletmanager kdeconnect gwenview
+# baloo kcalc partitionmanager
+# ttf-jetbrains-mono-nerd
+# firefox firefox-i18n-ru firefox-ublock-origin timeshift telegram-desktop
+# # brave-bin vlc qbittorrent
+# # Утилиты мониторинга и управления
+# nvtop btop openrgb piper amdgpu_top
+# # game
+# steam lutris
+# # Нужен для работы nice с отрицательными значениями (приоритет процесса) без root-прав
+# libcap
+# # Содержит taskset (привязка к ядрам). Обычно уже есть в системе, но проверь
+# util-linux
+# # Содержит powerprofilesctl для переключения режимов энергопотребления
+# power-profiles-daemon
+# # Отключает энергосбережение, повышает приоритет процесса и меняет "губернатор" CPU на performance
+# gamemode lib32-gamemode
+# # Микро-композитор от Valve. Маст-хэв для 240Hz. Он позволяет запускать игру в изолированном слое
+# gamescope
+# # Лучший оверлей. Показывает FPS, температуру, загрузку конкретных ядер и использование VRAM
+# mangohud lib32-mangohud
 )
 
 for i in "${PKGS[@]}"; do
@@ -177,8 +177,7 @@ pacman -Syy --noconfirm
 ### сождание юзера и начальное конфигурирование
 # usermod -p ${PASSWORD} root
 echo "root:$PASSWORD" | chpasswd
-glist="audio,video,input,adm,disk,log,network,scanner,storage,power,wheel"
-useradd -m -g users -G $glist -s /usr/bin/zsh "$NEW_USER"
+useradd -m -g users -G "audio,video,input,adm,disk,log,network,scanner,storage,power,wheel" -s /usr/bin/zsh "$NEW_USER"
 # usermod -p ${PASSWORD} "$NEW_USER"
 echo "$NEW_USER:$PASSWORD" | chpasswd
 
@@ -279,11 +278,13 @@ EOF
 cd /home/$NEW_USER
 sudo -u $NEW_USER git clone https://aur.archlinux.org/yay-bin.git
 cd yay-bin
-sudo -u $NEW_USER makepkg -sri --noconfirm
+sudo -u $NEW_USER makepkg -sr --noconfirm
+pacman -U --noconfirm yay-bin*.pkg.tar.zst
+cd ~/ && rm -rf /home/$NEW_USER/yay-bin
 
 
 ### zsh config
-cat <<EOF >/home/$NEW_USER/.zshrc
+cat <<'EOF' >/home/$NEW_USER/.zshrc
 #!/usr/bin/zsh
 # [[ -z $DISPLAY && $XDG_VTNR -eq 1 ]] && exec startx &> /dev/null
 
@@ -299,25 +300,30 @@ for dump in ~/.zcompdump(N.mh+24); do
 done
 compinit -C
 
-eval "$(starship init zsh)"
-
 [[ -e /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]] && \
   source /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 
 [[ -e /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
   source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+eval "\$(starship init zsh)"
 EOF
-sudo chown -R /home/$NEW_USER
+sudo chown -R $NEW_USER:users /home/$NEW_USER
+
+
+### blacklist modules
+cat <<EOF >/etc/modprobe.d/blacklist.conf
+# Отключаем аппаратные сторожевые таймеры для снижения задержек
+blacklist iTCO_wdt
+blacklist iTCO_vendor_support
+blacklist sp5100_tco
+EOF
 
 
 ### службы
 systemctl enable sshd
 systemctl enable NetworkManager
 systemctl enable power-profiles-daemon
-
-# systemctl enable systemd-networkd
-# systemctl enable systemd-resolved
-
 # systemctl enable sddm
 systemctl enable plasmalogin
 
