@@ -16,6 +16,8 @@ BOOT_LOADER=systemd-boot
 if [[ $EUID -ne 0 ]]; then
   echo "run root"; exit 1
 fi
+# Определяем количество потоков
+THREADS=$(nproc)
 
 read -p "create username: " NEW_USER
 read -sp "create password: " PASSWORD
@@ -115,53 +117,75 @@ btrfs-progs
 # arch-install-scripts
 # dhcpcd netctl iwd
 networkmanager
-wget git rsync gnu-netcat pv bash-completion htop tmux zsh
-starship zsh-autosuggestions fastfetch inxi micro
+wget git rsync gnu-netcat pv bash-completion less htop tmux zsh
+starship zsh-autosuggestions fastfetch inxi micro bat
 zip unzip unrar p7zip gzip bzip2 zlib hdparm nvme-cli
 xorg-xkill xorg-xrdb
 xf86-input-libinput xf86-input-vmmouse
-# xf86-video-fbdev xf86-video-dummy
-# xf86-video-intel xf86-video-amdgpu xf86-video-ati xf86-video-nouveau
-xf86-video-amdgpu xf86-video-vesa
+# xf86-video-intel xf86-video-nouveau
+# для vbox
+xf86-video-vesa xf86-video-vmware xf86-video-fbdev xf86-video-dummy
+# встройка, старый драйвер только для X-сервера
+xf86-video-amdgpu
 pipewire pipewire-audio pipewire-pulse lib32-pipewire pipewire-alsa pipewire-jack
 gst-plugin-pipewire wireplumber
-# zram-generator cpupower ananicy-cpp
-# # Графический мост
-# egl-wayland xorg-xwayland
-# # Для встройки
-# mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
-# libva-mesa-driver lib32-libva-mesa-driver mesa-vdpau lib32-mesa-vdpau
-# vkd3d lib32-vkd3d v4l2loopback-dkms
-# # nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime
-# plasma-login-manager plasma-meta fwupd xdg-desktop-portal-kde packagekit-qt6 kvantum
-# konsole dolphin ark ffmpegthumbs kwalletmanager kdeconnect gwenview
-# baloo kcalc partitionmanager
-# ttf-jetbrains-mono-nerd
-# firefox firefox-i18n-ru firefox-ublock-origin timeshift telegram-desktop
-# # brave-bin vlc qbittorrent
-# # Утилиты мониторинга и управления
-# nvtop btop openrgb piper amdgpu_top
-# # game
-# steam lutris
-# # Нужен для работы nice с отрицательными значениями (приоритет процесса) без root-прав
-# libcap
-# # Содержит taskset (привязка к ядрам). Обычно уже есть в системе, но проверь
-# util-linux
-# # Содержит powerprofilesctl для переключения режимов энергопотребления
-# power-profiles-daemon
-# # Отключает энергосбережение, повышает приоритет процесса и меняет "губернатор" CPU на performance
-# gamemode lib32-gamemode
-# # Микро-композитор от Valve. Маст-хэв для 240Hz. Он позволяет запускать игру в изолированном слое
-# gamescope
-# # Лучший оверлей. Показывает FPS, температуру, загрузку конкретных ядер и использование VRAM
-# mangohud lib32-mangohud
+zram-generator cpupower ananicy-cpp
+# Графический мост
+egl-wayland xorg-xwayland
+# Для встройки
+mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
+libva-mesa-driver lib32-libva-mesa-driver mesa-vdpau lib32-mesa-vdpau
+vkd3d lib32-vkd3d v4l2loopback-dkms
+# nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime
+plasma-login-manager plasma-meta fwupd xdg-desktop-portal-kde packagekit-qt6 kvantum
+konsole dolphin kate ark ffmpegthumbs kwalletmanager kdeconnect gwenview
+baloo kcalc partitionmanager
+ttf-jetbrains-mono-nerd
+firefox firefox-i18n-ru firefox-ublock-origin timeshift telegram-desktop
+# brave-bin vlc qbittorrent
+# Утилиты мониторинга и управления
+nvtop btop openrgb piper amdgpu_top
+# game
+steam lutris
+# Нужен для работы nice с отрицательными значениями (приоритет процесса) без root-прав
+libcap
+# Содержит taskset (привязка к ядрам). Обычно уже есть в системе, но проверь
+util-linux
+# Содержит powerprofilesctl для переключения режимов энергопотребления
+power-profiles-daemon
+# Отключает энергосбережение, повышает приоритет процесса и меняет "губернатор" CPU на performance
+gamemode lib32-gamemode
+# Микро-композитор от Valve. Маст-хэв для 240Hz. Он позволяет запускать игру в изолированном слое
+gamescope
+# Лучший оверлей. Показывает FPS, температуру, загрузку конкретных ядер и использование VRAM
+mangohud lib32-mangohud
 )
 
-for i in "${PKGS[@]}"; do
-  pacstrap -K /mnt $i 2>&1 | tee -a /tmp/log
+# Ускоренный цикл: сначала проверяем наличие, потом ставим всё, что нашлось
+VALID_PKGS=()
+for pkg in "${PKGS[@]}"; do
+    if pacman -Si "$pkg" >/dev/null 2>&1; then
+        VALID_PKGS+=("$pkg")
+    else
+        echo "Пакет $pkg не найден в репозиториях, пропускаю..." | tee -a /tmp/log
+    fi
 done
+pacstrap -K /mnt "${VALID_PKGS[@]}" 2>&1 | tee -a /tmp/log
 
 genfstab -pU /mnt > /mnt/etc/fstab
+
+
+### Установка пакетов из AUR
+AUR_PKGS=(
+oh-my-zsh-git
+zsh-fast-syntax-highlighting
+cachyos-ananicy-rules-git
+vkbasalt lib32-vkbasalt
+proton-ge-custom-bin
+protonup-qt-bin dxvk-bin
+heroic-games-launcher-bin
+)
+
 
 echo "==== create settings.sh ===="
 virt_d=$(systemd-detect-virt)
@@ -282,6 +306,14 @@ sudo -u $NEW_USER makepkg -sr --noconfirm
 pacman -U --noconfirm yay-bin*.pkg.tar.zst
 cd ~/ && rm -rf /home/$NEW_USER/yay-bin
 
+# Ускоряем сборку: использовать все ядра и сжатие zstd
+# Раскомментируем и выставляем максимальную скорость сборки
+sed -i "s/#MAKEFLAGS=\"-j.*/MAKEFLAGS=\"-j$THREADS\"/" /etc/makepkg.conf
+sed -i "s/COMPRESSZST=(zstd -c -T0 -)/COMPRESSZST=(zstd -c -T0 - --threads=0)/" /etc/makepkg.conf
+
+### Установка пакетов из AUR
+sudo -u $NEW_USER yay -S --noconfirm --needed "${AUR_PKGS[@]}"
+
 
 ### zsh config
 cat <<'EOF' >/home/$NEW_USER/.zshrc
@@ -306,7 +338,19 @@ compinit -C
 [[ -e /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
   source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
-eval "\$(starship init zsh)"
+# eval "\$(starship init zsh)"
+
+## ohmyzsh
+if [[ -d /usr/share/oh-my-zsh ]]; then
+  export ZSH="/usr/share/oh-my-zsh"
+  ZSH_THEME="af-magic"
+  DISABLE_AUTO_UPDATE="true"
+  ZSH_TMUX_AUTOSTART="false"
+  plugins=()
+  ZSH_CACHE_DIR=$HOME/.cache/oh-my-zsh
+  [[ ! -d $ZSH_CACHE_DIR ]] && mkdir -p $ZSH_CACHE_DIR
+  [[ -e $ZSH/oh-my-zsh.sh ]] && source $ZSH/oh-my-zsh.sh
+fi
 EOF
 sudo chown -R $NEW_USER:users /home/$NEW_USER
 
@@ -323,9 +367,13 @@ EOF
 ### службы
 systemctl enable sshd
 systemctl enable NetworkManager
-systemctl enable power-profiles-daemon
 # systemctl enable sddm
 systemctl enable plasmalogin
+systemctl enable power-profiles-daemon
+systemctl enable ananicy-cpp
+systemctl enable bluetooth
+systemctl enable avahi-daemon
+
 
 echo "==== System Setup Complete ===="
 LOL
