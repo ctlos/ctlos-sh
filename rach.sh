@@ -116,6 +116,7 @@ btrfs-progs
 # dhcpcd netctl iwd
 networkmanager
 wget git rsync gnu-netcat pv bash-completion htop tmux zsh
+fastfetch inxi starship zsh-autosuggestions micro
 zip unzip unrar p7zip gzip bzip2 zlib hdparm nvme-cli
 xorg-xkill xorg-xrdb
 xf86-input-libinput xf86-input-vmmouse
@@ -279,6 +280,34 @@ cd /home/$NEW_USER
 sudo -u $NEW_USER git clone https://aur.archlinux.org/yay-bin.git
 cd yay-bin
 sudo -u $NEW_USER makepkg -sri --noconfirm
+
+
+### zsh config
+cat <<EOF >/home/$NEW_USER/.zshrc
+#!/usr/bin/zsh
+# [[ -z $DISPLAY && $XDG_VTNR -eq 1 ]] && exec startx &> /dev/null
+
+export PATH=$HOME/.bin:$HOME/.local/bin:$PATH
+
+export HISTFILE=~/.zhistory
+export HISTSIZE=3000
+export SAVEHIST=3000
+
+autoload -Uz compinit
+for dump in ~/.zcompdump(N.mh+24); do
+  compinit
+done
+compinit -C
+
+eval "$(starship init zsh)"
+
+[[ -e /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]] && \
+  source /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+
+[[ -e /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
+  source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+EOF
+sudo chown -R /home/$NEW_USER
 
 
 ### службы
