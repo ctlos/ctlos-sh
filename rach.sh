@@ -347,6 +347,26 @@ options snd_hda_intel power_save_controller=N
 EOF
 
 
+### Модули ядра
+cat <<'EOF' >/etc/modules-load.d/gaming-performance.conf
+# Управление питанием и частотами процессора AMD
+amd_pstate
+# Поддержка работы сенсоров (мониторинг в MangoHud)
+nct6775
+# или k10temp (зависит от материнки, лучше оба)
+k10temp
+# Виртуализация (для работы эмуляторов/Docker/Wayland без задержек)
+kvm_amd
+# Драйверы NVIDIA (загружаем заранее для Gamescope/Wayland)
+nvidia
+nvidia_modeset
+nvidia_uvm
+nvidia_drm
+# Оптимизация сетевых протоколов (если используешь специфические фильтры)
+tcp_bbr
+EOF
+
+
 ### config zram-generator
 cat <<'EOF' >/etc/systemd/zram-generator.conf
 [zram0]
@@ -359,7 +379,6 @@ EOF
 
 ### sysctl правила
 ## Настройка ядра (sysctl) для тяжелых игр:
-
 cat <<'EOF' >/etc/sysctl.d/99-gaming.conf
 # vm.swappiness = 10
 ### только с zram 180, без 10
@@ -396,27 +415,6 @@ kernel.printk = 3 3 3 3
 EOF
 
 sysctl --system
-
-
-### Модули ядра
-
-cat <<'EOF' >/etc/modules-load.d/gaming-performance.conf
-# Управление питанием и частотами процессора AMD
-amd_pstate
-# Поддержка работы сенсоров (мониторинг в MangoHud)
-nct6775
-# или k10temp (зависит от материнки, лучше оба)
-k10temp
-# Виртуализация (для работы эмуляторов/Docker/Wayland без задержек)
-kvm_amd
-# Драйверы NVIDIA (загружаем заранее для Gamescope/Wayland)
-nvidia
-nvidia_modeset
-nvidia_uvm
-nvidia_drm
-# Оптимизация сетевых протоколов (если используешь специфические фильтры)
-tcp_bbr
-EOF
 
 
 ### Udev правила
@@ -509,19 +507,19 @@ systemctl enable bluetooth
 ### загрузчик
 if [[ "$BOOT_LOADER" == "grub-efi" ]]; then
 
-grub-install --target=x86_64-efi --efi-directory=/boot
-# sed -i -e 's/^GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/' /etc/default/grub
-sed -i '/GRUB_DISABLE_OS_PROBER/s/^#//g' /etc/default/grub
-grub-mkconfig -o /boot/grub/grub.cfg
+  grub-install --target=x86_64-efi --efi-directory=/boot
+  # sed -i -e 's/^GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/' /etc/default/grub
+  sed -i '/GRUB_DISABLE_OS_PROBER/s/^#//g' /etc/default/grub
+  grub-mkconfig -o /boot/grub/grub.cfg
 
 elif [[ "$BOOT_LOADER" == "grub" ]]; then
 
-grub-install $DISK
-grub-mkconfig -o /boot/grub/grub.cfg
+  grub-install $DISK
+  grub-mkconfig -o /boot/grub/grub.cfg
 
 else
 
-bootctl install
+  bootctl install
 cat <<EOF >/boot/loader/loader.conf
 default arch-zen.conf
 timeout 3
@@ -549,6 +547,46 @@ options root=UUID=$root_uuid $systemd_flags rw
 EOF
 
 fi
+
+
+### Скрипт Запуска (Топология + PRIME)
+cat <<'EOF' >/usr/local/bin/game-run
+#!/bin/bash
+
+# 1. Питание на максимум
+powerprofilesctl set performance
+# 2. Настройки NVIDIA & Sync (Для G-Sync и 240Hz)
+export __GL_GSYNC_ALLOWED=1
+export __GL_VRR_ALLOWED=1
+export __GL_MAX_FRAMES_ALLOWED=1
+export __GL_YIELD="NOTHING"
+# 3. Настройки PRIME (Форсируем дискретную карту)
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export __VK_LAYER_NV_optimus=NVIDIA_only
+# 4. Proton & Ray Tracing (NVAPI для DLSS и лучей)
+export PROTON_ENABLE_NVAPI=1
+export PROTON_HIDE_NVIDIA_GPU=0
+export VKD3D_CONFIG=dxr11,force_compute_root_parameters_push_constants
+
+# 5. ЗАПУСК
+# nice -n -10: Повышаем приоритет процесса
+# taskset: Привязываем к ядрам 0-7 (CCD0 с кэшем)
+# gamemoderun: Активируем системные оптимизации
+# gamescope: Создаем чистый слой вывода 240Hz, -e: интеграция со Steam
+# mangohud: Оверлей мониторинга
+nice -n -10 taskset -c 0-7,16-23 \
+  gamemoderun gamescope -r 240 -f -e -- mangohud "$@"
+
+# или под монитор с частотой и разрешением
+# nice -n -10 taskset -c 0-7,16-23 gamemoderun gamescope -W 3440 -H 1440 -r 240 -f -e -- mangohud %command%
+
+# 6. Возврат системы в нормальный режим после выхода из игры
+powerprofilesctl set balanced
+EOF
+
+chmod +x /usr/local/bin/game-run
+
 
 echo ">>> System Setup Complete"
 LOL
