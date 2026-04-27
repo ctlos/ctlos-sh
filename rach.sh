@@ -533,7 +533,7 @@ title Rach Linups (zen)
 linux /vmlinuz-linux-zen
 initrd /amd-ucode.img
 initrd /initramfs-linux-zen.img
-options root=UUID=$root_uuid $systemd_flags rw nowatchdog
+options root=UUID=$root_uuid $systemd_flags rw nowatchdog nmi_watchdog=0 loglevel=3
 # options root=UUID=$root_uuid $systemd_flags rw nowatchdog nmi_watchdog=0 nvidia_drm.modeset=1 nvidia_drm.fbdev=1 amd_pstate=active mitigations=off tsc=reliable clocksource=tsc split_lock_detect=off usbcore.autosuspend=-1
 EOF
 
