@@ -13,7 +13,7 @@
 exec > >(tee -a /tmp/install.log) 2>&1
 
 # === CONFIG ===
-: "${HOST_NAME:=rach}"
+: "${HOST_NAME:=arch}"
 : "${FS_TYPE:=btrfs}"
 : "${BOOT_LOADER:=systemd-boot}"
 : "${THREADS:=$(nproc)}"
@@ -33,7 +33,7 @@ read -sp "Confirm password: " C_PASSWORD; echo
 
 log "Select disk (lsblk -d):"
 lsblk -d
-read -p "Disk name (e.g.sda | vda | nvme0n1 | ...): " I_DISK
+read -p "Disk name (e.g. sda | vda | nvme0n1 | ...): " I_DISK
 DISK="/dev/$I_DISK"
 lsblk -d | grep -q "$I_DISK" || die "Disk $I_DISK not found"
 
@@ -42,35 +42,49 @@ log "Wiping disk header..."
 dd if=/dev/zero of="$DISK" bs=4096 count=256 status=progress
 
 log "Creating GPT partitions..."
-parted -s "$DISK" mklabel gpt \
-  mkpart primary 1MiB 500MiB set 1 boot on \
-  mkpart primary 500MiB 100%
+parted ${DISK} << EOF
+mklabel gpt
+mkpart primary 1MiB 1025MiB
+set 1 boot on
+mkpart primary 1025MiB 501GiB
+mkpart primary 501GiB 100%
+quit
+EOF
+sync && sleep 2
 
-B_DISK="${DISK}1"; R_DISK="${DISK}2"
-
+if [[ ${DISK} == *"nvme"* ]]; then P="p"; else P=""; fi
+B_DISK="${DISK}${P}1"
+R_DISK="${DISK}${P}2"
+G_DISK="${DISK}${P}3"
 
 # === FORMAT & MOUNT ===
 if [[ "$FS_TYPE" == "btrfs" ]]; then
-  mkfs.btrfs -f -L root "$R_DISK"
-  mkfs.fat -F32 "$B_DISK"
+  mkfs.btrfs -f -L "ARCH_SYSTEM" "$R_DISK"
+  yes | mkfs.fat -F32 "$B_DISK"
+  yes | mkfs.ext4 -F -L "GAMES" "$G_DISK"
   mount "$R_DISK" /mnt
   btrfs subvolume create /mnt/{@,@home,@cache,@snapshots}
   umount /mnt
 
   BTRFS_OPTS="compress=zstd:1,ssd,discard=async,noatime"
   mount -o "$BTRFS_OPTS,subvol=@" "$R_DISK" /mnt
-  mkdir -p /mnt/{boot,home,var/cache,.snapshots}
+  mkdir -p /mnt/{boot,media/games,home,var/cache,.snapshots}
   mount -o "$BTRFS_OPTS,subvol=@home" "$R_DISK" /mnt/home
   mount -o "$BTRFS_OPTS,subvol=@cache" "$R_DISK" /mnt/var/cache
   mount -o "${BTRFS_OPTS//noatime/},subvol=@snapshots" "$R_DISK" /mnt/.snapshots
+  # Монтируем раздел с играми (Ext4)
+  mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/media/games
+  # раздел boot (fat32)
   mount "$B_DISK" /mnt/boot
   [[ "$BOOT_LOADER" == "systemd-boot" ]] && SYSTEMD_FLAGS="rootflags=subvol=/@ rootfstype=btrfs" || SYSTEMD_FLAGS=""
 
 elif [[ "$FS_TYPE" == "ext4" ]]; then
-  mkfs.ext4 -F -L root "$R_DISK"
-  mkfs.fat -F32 "$B_DISK"
+  yes | mkfs.ext4 -F -L root "$R_DISK"
+  yes | mkfs.fat -F32 "$B_DISK"
   mount "$R_DISK" /mnt
-  mkdir -p /mnt/boot && mount "$B_DISK" /mnt/boot
+  mkdir -p /mnt/{boot,media/games}
+  mount "$B_DISK" /mnt/boot
+  mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/media/games
   SYSTEMD_FLAGS=""
 else
   die "Unsupported FS_TYPE: $FS_TYPE"
@@ -82,6 +96,7 @@ TIME_ZONE=$(curl -s https://ipinfo.io/timezone)
 
 # === MIRRORS & PACSTRAP ===
 log "Updating mirrorlist..."
+rm -rf /etc/pacman.d/hooks/*
 reflector --verbose -p https,http --sort rate -l 20 -f 10 --threads 5 --save /etc/pacman.d/mirrorlist
 pacman -Syy --noconfirm archlinux-keyring
 
@@ -99,24 +114,24 @@ networkmanager # networkmanager-openconnect networkmanager-openvpn mobile-broadb
 # bluez bluez-utils bluez-libs
 wget git rsync openbsd-netcat pv bash-completion less bat bottom
 zsh starship zsh-autosuggestions fastfetch tmux inxi micro
-zip unzip unrar 7zip gzip bzip2 zlib hdparm nvme-cli
-xorg-xkill xorg-xrdb
-xf86-input-libinput xf86-input-vmmouse
+zip unzip unrar 7zip gzip bzip2 zlib hdparm nvme-cli smartmontools
+xorg-xkill xorg-xrdb xorg-xwayland
+xf86-input-libinput
 pipewire pipewire-audio pipewire-pulse lib32-pipewire pipewire-alsa pipewire-jack
 gst-plugin-pipewire wireplumber
 ## vbox
-xf86-video-vesa xf86-video-fbdev xf86-video-dummy mesa lib32-mesa
-# xf86-video-intel xf86-video-amdgpu xf86-video-ati xf86-video-nouveau
+# xf86-input-vmmouse xf86-video-vesa xf86-video-fbdev mesa lib32-mesa
 ## Для встройки
-# mesa lib32-mesa vulkan-mesa-layers vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
-# vkd3d lib32-vkd3d v4l2loopback-dkms
+mesa lib32-mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon
+vulkan-mesa-layers vulkan-icd-loader lib32-vulkan-icd-loader
+vkd3d lib32-vkd3d v4l2loopback-dkms amdgpu_top
 ## nvidia
-# nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime
+nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime nvtop
+## Графический мост nvidia
+egl-wayland
 zram-generator cpupower ananicy-cpp
 ttf-jetbrains-mono-nerd
 oh-my-zsh-git zsh-fast-syntax-highlighting
-## Графический мост
-egl-wayland xorg-xwayland
 ## kde
 plasma-login-manager plasma-meta fwupd xdg-desktop-portal-kde packagekit-qt6 kvantum
 konsole dolphin kate ark ffmpegthumbs kwalletmanager kdeconnect gwenview
@@ -125,7 +140,7 @@ ttf-jetbrains-mono-nerd
 firefox firefox-i18n-ru firefox-ublock-origin timeshift telegram-desktop
 # brave-bin vlc qbittorrent
 ## Утилиты мониторинга и управления
-nvtop btop openrgb piper amdgpu_top
+btop openrgb piper
 ## game
 steam lutris
 ## Нужен для работы nice с отрицательными значениями (приоритет процесса) без root-прав
@@ -151,7 +166,7 @@ for pkg in "${PKGS[@]}"; do
         log "Warning: Package $pkg not found, skipping..."
     fi
 done
-pacstrap -K /mnt "${VALID_PKGS[@]}" || log "Some packages may have failed, continuing..."
+pacstrap /mnt "${VALID_PKGS[@]}" || log "Some packages may have failed, continuing..."
 genfstab -pU /mnt > /mnt/etc/fstab
 
 # === POST-INSTALL SCRIPT (chroot) ===
@@ -174,6 +189,19 @@ log() { echo "[\$(date '+%H:%M:%S')] \$*"; }
 
 
 # === BASIC SETUP ===
+mkdir -p /media
+chmod 755 -R /media
+
+echo "$HOST_NAME" > /etc/hostname
+ln -sf "/usr/share/zoneinfo/$TIME_ZONE" /etc/localtime
+hwclock --systohc --utc
+timedatectl set-ntp true
+
+echo -e "en_US.UTF-8 UTF-8\nru_RU.UTF-8 UTF-8" > /etc/locale.gen
+locale-gen
+echo -e "LANG=ru_RU.UTF-8" > /etc/locale.conf
+echo -e "KEYMAP=ru\nFONT=cyr-sun16" > /etc/vconsole.conf
+
 pacman -S --noconfirm --needed haveged
 haveged -w 1024
 pacman-key --init && pacman-key --populate
@@ -187,16 +215,6 @@ useradd -m -g users -G "audio,video,input,adm,disk,log,network,scanner,storage,p
 echo "$NEW_USER:$PASSWORD" | chpasswd
 echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
 
-echo "$HOST_NAME" > /etc/hostname
-ln -sf "/usr/share/zoneinfo/$TIME_ZONE" /etc/localtime
-hwclock --systohc --utc
-timedatectl set-ntp true
-
-echo -e "en_US.UTF-8 UTF-8\nru_RU.UTF-8 UTF-8" > /etc/locale.gen
-locale-gen
-echo -e "LANG=ru_RU.UTF-8" > /etc/locale.conf
-echo -e "KEYMAP=ru\nFONT=cyr-sun16" > /etc/vconsole.conf
-
 
 # === MKINITCPIO ===
 # if [[ "$FS_TYPE" == "btrfs" ]]; then
@@ -206,7 +224,7 @@ echo -e "KEYMAP=ru\nFONT=cyr-sun16" > /etc/vconsole.conf
 
 # === VIRTUALIZATION ===
 VIRT=\$(systemd-detect-virt)
-if [[ "\$VIRT" == "oracle"|| "\$VIRT" == "vbox" ]]; then
+if [[ "\$VIRT" == "oracle" || "\$VIRT" == "vbox" ]]; then
   pacman -S --noconfirm --needed virtualbox-guest-utils
   systemctl enable vboxservice
   usermod -a -G vboxsf "$NEW_USER"
@@ -266,8 +284,12 @@ autoload -Uz compinit; for dump in ~/.zcompdump(N.mh+24); do compinit; done; com
 [[ -e /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 if [[ -d /usr/share/oh-my-zsh ]]; then
-  export ZSH="/usr/share/oh-my-zsh"; ZSH_THEME="af-magic"; DISABLE_AUTO_UPDATE="true"; plugins=()
-  ZSH_CACHE_DIR=\$HOME/.cache/oh-my-zsh; mkdir -p \$ZSH_CACHE_DIR
+  export ZSH="/usr/share/oh-my-zsh"
+  ZSH_THEME="af-magic"
+  DISABLE_AUTO_UPDATE="true"
+  plugins=()
+  ZSH_CACHE_DIR=\$HOME/.cache/oh-my-zsh
+  mkdir -p \$ZSH_CACHE_DIR
   [[ -e \$ZSH/oh-my-zsh.sh ]] && source \$ZSH/oh-my-zsh.sh
 else
   eval "\$(starship init zsh)"
@@ -440,6 +462,27 @@ cat <<EOF >/etc/security/limits.d/99-gaming.conf
 EOF
 
 
+# === LOGS SYSTEMD ===
+mkdir -p /etc/systemd/journald.conf.d
+cat <<EOF >/etc/systemd/journald.conf.d/90-storage.conf
+[Journal]
+Storage=auto
+RuntimeMaxUse=50M
+SystemMaxUse=100M
+SyncIntervalSec=5m
+EOF
+
+
+# === TIMEOUT WATCHDOG ===
+# ускорение перезагрузки
+mkdir -p /etc/systemd/system.conf.d
+cat <<EOF >/etc/systemd/system.conf.d/90-timeout.conf
+[Manager]
+DefaultTimeoutStartSec=15s
+DefaultTimeoutStopSec=10s
+EOF
+
+
 # === BOOTLOADER ===
 log "Final initramfs rebuild..."
 mkinitcpio -P
@@ -538,6 +581,5 @@ cat <<EOF
 >>> Umount mnt: sudo umount -Rl /mnt
 >>> Reboot: sudo systemctl reboot
 
->>> yay -S --noconfirm oh-my-zsh-git zsh-fast-syntax-highlighting cachyos-ananicy-rules-git \
-  vkbasalt lib32-vkbasalt proton-ge-custom-bin protonup-qt-bin dxvk-bin heroic-games-launcher-bin
+>>> yay -S --noconfirm oh-my-zsh-git zsh-fast-syntax-highlighting cachyos-ananicy-rules-git vkbasalt lib32-vkbasalt proton-ge-custom-bin protonup-qt-bin dxvk-bin heroic-games-launcher-bin
 EOF
