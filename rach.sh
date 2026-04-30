@@ -15,8 +15,11 @@ exec > >(tee -a /tmp/install.log) 2>&1
 # === CONFIG ===
 : "${HOST_NAME:=arch}"
 : "${FS_TYPE:=btrfs}"
-: "${BOOT_LOADER:=systemd-boot}"
+# grub-efi | grub | systemd-boot
+: "${BOOT_LOADER:=grub-efi}"
 : "${THREADS:=$(nproc)}"
+# quiet
+KERNEL_PARAMS="loglevel=3 nowatchdog nmi_watchdog=0 nvidia_drm.modeset=1 nvidia_drm.fbdev=1 mitigations=off tsc=reliable clocksource=tsc split_lock_detect=off usbcore.autosuspend=-1"
 
 # === UTILS ===
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
@@ -45,7 +48,7 @@ log "Creating GPT partitions..."
 parted ${DISK} << EOF
 mklabel gpt
 mkpart primary 1MiB 1025MiB
-set 1 boot on
+set 1 esp on
 mkpart primary 1025MiB 501GiB
 mkpart primary 501GiB 100%
 quit
@@ -74,9 +77,25 @@ if [[ "$FS_TYPE" == "btrfs" ]]; then
   mount -o "${BTRFS_OPTS//noatime/},subvol=@snapshots" "$R_DISK" /mnt/.snapshots
   # Монтируем раздел с играми (Ext4)
   mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/media/games
+  # --- УСЛОВИЕ ДЛЯ ЗАГРУЗЧИКА ---
   # раздел boot (fat32)
-  mount "$B_DISK" /mnt/boot
   [[ "$BOOT_LOADER" == "systemd-boot" ]] && SYSTEMD_FLAGS="rootflags=subvol=/@ rootfstype=btrfs" || SYSTEMD_FLAGS=""
+  if [[ "$BOOT_LOADER" == "systemd-boot" ]]; then
+    # Для systemd-boot монтируем прямо в /boot
+    log "Configuring mount for systemd-boot (/boot)"
+    mkdir -p /mnt/boot
+    mount "$B_DISK" /mnt/boot
+  elif [[ "$BOOT_LOADER" == "grub-efi" ]]; then
+    # Для GRUB efi монтируем в /boot/efi
+    log "Configuring mount for GRUB (/boot/efi)"
+    mkdir -p /mnt/boot/efi
+    mount "$B_DISK" /mnt/boot/efi
+  else
+    # Для GRUB монтируем в /boot
+    log "Configuring mount for GRUB (/boot)"
+    mkdir -p /mnt/boot
+    mount "$B_DISK" /mnt/boot
+  fi
 
 elif [[ "$FS_TYPE" == "ext4" ]]; then
   yes | mkfs.ext4 -F -L root "$R_DISK"
@@ -106,12 +125,13 @@ base base-devel nano reflector openssh haveged
 linux linux-headers
 linux-zen linux-zen-headers
 linux-firmware btrfs-progs
-efibootmgr amd-ucode os-prober
-# grub os-prober intel-ucode
-# lvm2 arch-install-scripts
+efibootmgr grub grub-btrfs os-prober
+amd-ucode # intel-ucode
 networkmanager # networkmanager-openconnect networkmanager-openvpn mobile-broadband-provider-info
+## wifi: iwd | wpa_supplicant
+wireless-regdb wireless_tools iwd
 # modemmanager b43-fwcutter broadcom-wl
-# bluez bluez-utils bluez-libs
+bluez bluez-utils bluez-libs
 wget git rsync openbsd-netcat pv bash-completion less bat bottom
 zsh starship zsh-autosuggestions fastfetch tmux inxi micro
 zip unzip unrar 7zip gzip bzip2 zlib hdparm nvme-cli smartmontools
@@ -180,6 +200,7 @@ PASSWORD="$PASSWORD"
 HOST_NAME="$HOST_NAME"
 TIME_ZONE="$TIME_ZONE"
 FS_TYPE="$FS_TYPE"
+KERNEL_PARAMS="$KERNEL_PARAMS"
 BOOT_LOADER="$BOOT_LOADER"
 ROOT_UUID="$ROOT_UUID"
 SYSTEMD_FLAGS="$SYSTEMD_FLAGS"
@@ -326,8 +347,6 @@ options snd_hda_intel power_save_controller=N
 EOF
 
 cat <<EOF >/etc/modules-load.d/gaming-performance.conf
-# Управление питанием и частотами процессора AMD
-amd_pstate
 # Поддержка работы сенсоров (мониторинг в MangoHud)
 nct6775
 # или k10temp (зависит от материнки, лучше оба)
@@ -394,22 +413,27 @@ sysctl --system
 # === UDEV RULES ===
 mkdir -p /etc/udev/rules.d
 cat <<EOF >/etc/udev/rules.d/80-nvidia-pm.rules
-# Запрещаем видеокарте уходить в глубокий сон (D3), чтобы не было фризов при просыпании
+# Запрещаем видеокарте уходить в глубокий сон (D3)
+# Это критично для стабильного FPS и отсутствия лагов при выходе из сна
 ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", ATTR{power/control}="on"
 EOF
+
 cat <<EOF >/etc/udev/rules.d/60-ioschedulers.rules
-# Отключаем энергосбережение контроллеров SATA для исключения задержек
-ACTION=="add", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="max_performance"
-# правило для (HDD), которое окончательно запрещает им тупить и засыпать
-ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTRS{id/bus}=="ata", RUN+="/usr/bin/hdparm -B 254 -S 0 /dev/%k"
-# HDD: Используем BFQ для плавности
-ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
-# SSD (SATA): Kyber — баланс скорости и задержек
-ACTION=="add|change", KERNEL=="sd[a-z]*|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
-# NVMe (Samsung 9100 PRO): Прямой доступ без планировщика
-# Мы используем 'none', чтобы дать контроллеру SSD полную свободу
-ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none", ATTR{queue/nr_requests}="1024"
+# HDD (Вращающиеся диски)
+# Запрещаем парковку головок и сон через hdparm
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", RUN+="/usr/bin/hdparm -B 254 -S 0 /dev/%k"
+# Планировщик BFQ лучше всего справляется с задержками механики
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+
+# SSD (SATA)
+# Kyber отлично подходит для SATA SSD, уменьшая "затыки" при высокой нагрузке
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]*|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
+
+# 5. NVMe (Твой Samsung 9100 PRO)
+# Убираем все лишнее. NVMe сам знает, как распределять потоки.
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="nvme[0-9]n[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none", ATTR{queue/rq_affinity}="2"
 EOF
+
 cat <<EOF >/etc/udev/rules.d/40-timer-permissions.rules
 # для оптимизации прерываний реального времени
 KERNEL=="rtc0", GROUP="audio"
@@ -424,10 +448,13 @@ cat <<EOF >/etc/NetworkManager/conf.d/99-gaming.conf
 [device]
 # Отключаем случайную генерацию MAC-адресов (ускоряет подключение к роутеру)
 wifi.scan-rand-mac-address=no
+wifi.backend=iwd
+
 [connection]
 # Отключаем IPv6, если твой провайдер его не использует (убирает лишние запросы)
 ipv6.method=ignore
 # Настройка для Wi-Fi (если используешь чип MediaTek/Realtek на X870E)
+
 [wifi]
 # Отключаем агрессивное сканирование сетей в фоновом режиме.
 # Это убирает резкие скачки пинга (lag spikes) каждые пару минут.
@@ -490,8 +517,9 @@ log "Final initramfs rebuild..."
 mkinitcpio -P
 
 if [[ "$BOOT_LOADER" == "grub-efi" ]]; then
-  grub-install --target=x86_64-efi --efi-directory=/boot
-  sed -i '/GRUB_DISABLE_OS_PROBER/s/^#//' /etc/default/grub
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+  sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$KERNEL_PARAMS\"|" /etc/default/grub
+  sed -i '/#GRUB_DISABLE_OS_PROBER/s/^#//' /etc/default/grub
   grub-mkconfig -o /boot/grub/grub.cfg
 elif [[ "$BOOT_LOADER" == "grub" ]]; then
   grub-install "$DISK"
@@ -510,7 +538,7 @@ linux /vmlinuz-linux-zen
 initrd /amd-ucode.img
 initrd /initramfs-linux-zen.img
 # options root=UUID=$ROOT_UUID $SYSTEMD_FLAGS rw loglevel=3 nowatchdog nmi_watchdog=0
-options root=UUID=$ROOT_UUID $SYSTEMD_FLAGS rw loglevel=3 nowatchdog nmi_watchdog=0 nvidia_drm.modeset=1 nvidia_drm.fbdev=1 amd_pstate=active mitigations=off tsc=reliable clocksource=tsc split_lock_detect=off usbcore.autosuspend=-1
+options root=UUID=$ROOT_UUID $SYSTEMD_FLAGS rw $KERNEL_PARAMS
 EOF
   cat <<EOF >/boot/loader/entries/arch.conf
 title Rach Linups (Arch Kernel)
@@ -556,9 +584,15 @@ systemctl enable NetworkManager
 systemctl enable plasmalogin
 systemctl enable power-profiles-daemon
 systemctl enable ananicy-cpp
-systemctl enable bluetooth
+if pacman -Qs ananicy-cpp > /dev/null; then
+systemctl enable ananicy-cpp
+fi
+# systemctl enable bluetooth
 # systemctl enable avahi-daemon
-
+## To have GRUB automatically detect Timeshift/Snapper snapshots
+if pacman -Qs grub-btrfs > /dev/null; then
+systemctl enable grub-btrfsd
+fi
 log "Post-install complete"
 CHROOT_SCRIPT
 
