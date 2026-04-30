@@ -116,8 +116,8 @@ TIME_ZONE=$(curl -s https://ipinfo.io/timezone)
 # === MIRRORS & PACSTRAP ===
 log "Updating mirrorlist..."
 rm -rf /etc/pacman.d/hooks/*
+pacman -Syy --noconfirm archlinux-keyring reflector
 reflector --verbose -p https,http --sort rate -l 20 -f 10 --threads 5 --save /etc/pacman.d/mirrorlist
-pacman -Syy --noconfirm archlinux-keyring
 
 log "Installing base packages..."
 PKGS=(
