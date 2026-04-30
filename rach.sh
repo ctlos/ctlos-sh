@@ -5,8 +5,8 @@
 # https://raw.githubusercontent.com/ctlos/ctlos-sh/master/rach.sh
 
 # curl -LO kutt.to/rach
-# nano rach.sh
-# sudo sh rach.sh
+# nano rach
+# sudo sh rach
 ## run ENV
 # sudo HOST_NAME=my-pc sh rach
 
@@ -125,7 +125,7 @@ base base-devel nano reflector openssh haveged
 linux linux-headers
 linux-zen linux-zen-headers
 linux-firmware btrfs-progs
-efibootmgr grub grub-btrfs os-prober
+efibootmgr grub grub-btrfs inotify-tools os-prober
 amd-ucode # intel-ucode
 networkmanager # networkmanager-openconnect networkmanager-openvpn mobile-broadband-provider-info
 ## wifi: iwd | wpa_supplicant
