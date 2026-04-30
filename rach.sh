@@ -210,9 +210,6 @@ log() { echo "[\$(date '+%H:%M:%S')] \$*"; }
 
 
 # === BASIC SETUP ===
-mkdir -p /media
-chmod 755 -R /media
-
 echo "$HOST_NAME" > /etc/hostname
 ln -sf "/usr/share/zoneinfo/$TIME_ZONE" /etc/localtime
 hwclock --systohc --utc
@@ -236,6 +233,8 @@ useradd -m -g users -G "audio,video,input,adm,disk,log,network,scanner,storage,p
 echo "$NEW_USER:$PASSWORD" | chpasswd
 echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
 
+mkdir -p /media/games
+chmod 755 -R /media
 chown -R "$NEW_USER":users /media/*
 
 
