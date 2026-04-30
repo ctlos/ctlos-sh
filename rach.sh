@@ -507,8 +507,8 @@ title Rach Linups (zen)
 linux /vmlinuz-linux-zen
 initrd /amd-ucode.img
 initrd /initramfs-linux-zen.img
-options root=UUID=$ROOT_UUID $SYSTEMD_FLAGS rw loglevel=3 nowatchdog nmi_watchdog=0
-# options root=UUID=$ROOT_UUID $SYSTEMD_FLAGS rw loglevel=3 nowatchdog nmi_watchdog=0 nvidia_drm.modeset=1 nvidia_drm.fbdev=1 amd_pstate=active mitigations=off tsc=reliable clocksource=tsc split_lock_detect=off usbcore.autosuspend=-1
+# options root=UUID=$ROOT_UUID $SYSTEMD_FLAGS rw loglevel=3 nowatchdog nmi_watchdog=0
+options root=UUID=$ROOT_UUID $SYSTEMD_FLAGS rw loglevel=3 nowatchdog nmi_watchdog=0 nvidia_drm.modeset=1 nvidia_drm.fbdev=1 amd_pstate=active mitigations=off tsc=reliable clocksource=tsc split_lock_detect=off usbcore.autosuspend=-1
 EOF
   cat <<EOF >/boot/loader/entries/arch.conf
 title Rach Linups (Arch Kernel)
