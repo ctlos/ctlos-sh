@@ -191,7 +191,6 @@ log() { echo "[\$(date '+%H:%M:%S')] \$*"; }
 # === BASIC SETUP ===
 mkdir -p /media
 chmod 755 -R /media
-chown -R :users /media/*
 
 echo "$HOST_NAME" > /etc/hostname
 ln -sf "/usr/share/zoneinfo/$TIME_ZONE" /etc/localtime
@@ -215,6 +214,8 @@ echo "root:$PASSWORD" | chpasswd
 useradd -m -g users -G "audio,video,input,adm,disk,log,network,scanner,storage,power,wheel" -s /usr/bin/zsh "$NEW_USER"
 echo "$NEW_USER:$PASSWORD" | chpasswd
 echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
+
+chown -R "$NEW_USER":users /media/*
 
 
 # === MKINITCPIO ===
