@@ -191,6 +191,7 @@ log() { echo "[\$(date '+%H:%M:%S')] \$*"; }
 # === BASIC SETUP ===
 mkdir -p /media
 chmod 755 -R /media
+chown -R :users /media/*
 
 echo "$HOST_NAME" > /etc/hostname
 ln -sf "/usr/share/zoneinfo/$TIME_ZONE" /etc/localtime
@@ -224,7 +225,7 @@ echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
 
 # === VIRTUALIZATION ===
 VIRT=\$(systemd-detect-virt)
-if [[ "\$VIRT" == "oracle" || "\$VIRT" == "vbox" ]]; then
+if [[ "\$VIRT" == "oracle" || "\$VIRT" == "vbox" || "\$VIRT" == "container-other" ]]; then
   pacman -S --noconfirm --needed virtualbox-guest-utils
   systemctl enable vboxservice
   usermod -a -G vboxsf "$NEW_USER"
