@@ -64,19 +64,22 @@ G_DISK="${DISK}${P}3"
 if [[ "$FS_TYPE" == "btrfs" ]]; then
   mkfs.btrfs -f -L "ARCH_SYSTEM" "$R_DISK"
   yes | mkfs.fat -F32 "$B_DISK"
-  yes | mkfs.ext4 -F -L "GAMES" "$G_DISK"
+  # yes | mkfs.ext4 -F -L "GAMES" "$G_DISK"
+  yes | mkfs.ext4 -F -L "HOME" "$G_DISK"
   mount "$R_DISK" /mnt
-  btrfs subvolume create /mnt/{@,@home,@cache,@snapshots}
+  # btrfs subvolume create /mnt/{@,@home,@cache,@snapshots}
+  btrfs subvolume create /mnt/{@,@cache,@snapshots}
   umount /mnt
 
   BTRFS_OPTS="compress=zstd:1,ssd,discard=async,noatime"
   mount -o "$BTRFS_OPTS,subvol=@" "$R_DISK" /mnt
   mkdir -p /mnt/{boot,media/games,home,var/cache,.snapshots}
-  mount -o "$BTRFS_OPTS,subvol=@home" "$R_DISK" /mnt/home
+  # mount -o "$BTRFS_OPTS,subvol=@home" "$R_DISK" /mnt/home
   mount -o "$BTRFS_OPTS,subvol=@cache" "$R_DISK" /mnt/var/cache
   mount -o "${BTRFS_OPTS//noatime/},subvol=@snapshots" "$R_DISK" /mnt/.snapshots
   # Монтируем раздел с играми (Ext4)
-  mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/media/games
+  # mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/media/games
+  mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/home
   # --- УСЛОВИЕ ДЛЯ ЗАГРУЗЧИКА ---
   # раздел boot (fat32)
   [[ "$BOOT_LOADER" == "systemd-boot" ]] && SYSTEMD_FLAGS="rootflags=subvol=/@ rootfstype=btrfs" || SYSTEMD_FLAGS=""
@@ -127,7 +130,7 @@ linux-zen linux-zen-headers
 linux-firmware btrfs-progs
 efibootmgr grub grub-btrfs inotify-tools os-prober
 amd-ucode # intel-ucode
-networkmanager # networkmanager-openconnect networkmanager-openvpn mobile-broadband-provider-info
+ufw networkmanager # networkmanager-openconnect networkmanager-openvpn mobile-broadband-provider-info
 ## wifi: iwd | wpa_supplicant
 wireless-regdb wireless_tools iwd
 # modemmanager b43-fwcutter broadcom-wl
@@ -150,6 +153,7 @@ nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime nvtop
 ## Графический мост nvidia
 egl-wayland
 zram-generator cpupower ananicy-cpp
+snapper timeshift
 ttf-jetbrains-mono-nerd
 oh-my-zsh-git zsh-fast-syntax-highlighting
 ## kde
@@ -157,7 +161,7 @@ plasma-login-manager plasma-meta fwupd xdg-desktop-portal-kde packagekit-qt6 kva
 konsole dolphin kate ark ffmpegthumbs kwalletmanager kdeconnect gwenview
 baloo kcalc partitionmanager
 ttf-jetbrains-mono-nerd
-firefox firefox-i18n-ru firefox-ublock-origin timeshift telegram-desktop
+firefox firefox-i18n-ru firefox-ublock-origin telegram-desktop
 # brave-bin vlc qbittorrent
 ## Утилиты мониторинга и управления
 btop openrgb piper
@@ -516,12 +520,12 @@ log "Final initramfs rebuild..."
 mkinitcpio -P
 
 if [[ "$BOOT_LOADER" == "grub-efi" ]]; then
-  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
   sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$KERNEL_PARAMS\"|" /etc/default/grub
   sed -i '/#GRUB_DISABLE_OS_PROBER/s/^#//' /etc/default/grub
   grub-mkconfig -o /boot/grub/grub.cfg
 elif [[ "$BOOT_LOADER" == "grub" ]]; then
-  grub-install "$DISK"
+  grub-install --target=i386-pc "$DISK" --recheck
   grub-mkconfig -o /boot/grub/grub.cfg
 else
   bootctl install
