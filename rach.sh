@@ -64,22 +64,19 @@ G_DISK="${DISK}${P}3"
 if [[ "$FS_TYPE" == "btrfs" ]]; then
   mkfs.btrfs -f -L "ARCH_SYSTEM" "$R_DISK"
   yes | mkfs.fat -F32 "$B_DISK"
-  # yes | mkfs.ext4 -F -L "GAMES" "$G_DISK"
-  yes | mkfs.ext4 -F -L "HOME" "$G_DISK"
+  yes | mkfs.ext4 -F -L "GAMES" "$G_DISK"
   mount "$R_DISK" /mnt
-  # btrfs subvolume create /mnt/{@,@home,@cache,@snapshots}
-  btrfs subvolume create /mnt/{@,@cache,@snapshots}
+  btrfs subvolume create /mnt/{@,@home,@cache,@snapshots}
   umount /mnt
 
   BTRFS_OPTS="compress=zstd:1,ssd,discard=async,noatime"
   mount -o "$BTRFS_OPTS,subvol=@" "$R_DISK" /mnt
   mkdir -p /mnt/{boot,media/games,home,var/cache,.snapshots}
-  # mount -o "$BTRFS_OPTS,subvol=@home" "$R_DISK" /mnt/home
+  mount -o "$BTRFS_OPTS,subvol=@home" "$R_DISK" /mnt/home
   mount -o "$BTRFS_OPTS,subvol=@cache" "$R_DISK" /mnt/var/cache
   mount -o "${BTRFS_OPTS//noatime/},subvol=@snapshots" "$R_DISK" /mnt/.snapshots
   # Монтируем раздел с играми (Ext4)
-  # mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/media/games
-  mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/home
+  mount -o noatime,lazytime,commit=60,data=ordered "$G_DISK" /mnt/media/games
   # --- УСЛОВИЕ ДЛЯ ЗАГРУЗЧИКА ---
   # раздел boot (fat32)
   [[ "$BOOT_LOADER" == "systemd-boot" ]] && SYSTEMD_FLAGS="rootflags=subvol=/@ rootfstype=btrfs" || SYSTEMD_FLAGS=""
